@@ -184,6 +184,7 @@ class MovieCutter(MovieProcessor):
         #os.chdir(self.folder_path)
         self.padding = padding
         self.fps = fps
+        print(vid_path)
         print(''.join(vid_path.split(os.path.sep)[-1].split('.')[0:-1]))
         self.folder_name = save_dir+''.join(vid_path.split(os.path.sep)[-1].split('.')[0:-1])
         self.movie_format = movie_format
