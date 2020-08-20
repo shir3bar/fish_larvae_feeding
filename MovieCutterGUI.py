@@ -16,7 +16,7 @@ class CutterApp():
         self.btn_open = tk.Button(self.frm_btn, text="Open", command=self.open_vid)
         self.btn_save = tk.Button(self.frm_btn,text='Save to', command=self.save_dir)
         self.btn_start = tk.Button(self.frm_btn, text="Start Cutting", command=self.cut_movies)
-        self.lbl_training = tk.Label(self.window, text='Try me')
+        self.lbl_training = tk.Label(self.window, text='Choose a video file first')
         self.bar = Progressbar(self.window, length=300, orient="horizontal",
                                     style='black.Horizontal.TProgressbar', mode="determinate")
         self.window.rowconfigure([0,1],weight=1,minsize=100)
@@ -33,8 +33,10 @@ class CutterApp():
         self.vidpath = askopenfilename(filetypes=[("Video Files", ["*.mp4","*.avi"]), ("All Files", "*.*")])
         if not self.vidpath:
             return
-
         self.window.title(f"Movie Cutter - {self.vidpath}")
+        self.lbl_training.configure(text='Choose where to save the videos')
+        self.lbl_training.update()
+        self.bar["value"] = 0
 
     def save_dir(self):
         self.savepath = askdirectory()

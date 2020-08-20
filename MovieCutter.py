@@ -178,7 +178,6 @@ class MovieCutter(MovieProcessor):
     def __init__(self, vid_path, save_dir, padding=250, fps=30, movie_format='.avi',
                  movie_length=100,progressbar=[], trainlabel=[]):
         super().__init__(vid_path,save_dir)
-        self.vid_path = vid_path
         self.padding = padding
         self.fps = fps
         folder = os.path.basename(vid_path).split('.')[0]
@@ -262,12 +261,11 @@ class MovieCutter(MovieProcessor):
             os.mkdir(self.folder_name)
         self.trainlabel.configure(text='counting frames...')
         self.trainlabel.update()
-        self.num_frames = count_frames(self.vid_path)
+        self.num_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
         if self.num_train_frames > self.num_frames:
             self.num_train_frames=round(self.num_frames/4)
         if self.progressbar:
             self.progressbar["maximum"] = self.num_frames - self.num_train_frames
-            self.progressbar["value"] = 0
         fps = FPS().start()
         self.trainlabel.configure(text='training background subtractor...')
         self.trainlabel.update()
@@ -293,6 +291,9 @@ class MovieCutter(MovieProcessor):
         self.cap.release()
         fps.stop()
         self.log.to_csv(self.folder_name + os.path.sep + 'log.csv', index=False)
+        self.trainlabel.configure(text='Done!')
+        self.trainlabel.update()
+
         print("[INFO] elasped time: {:.2f}".format(fps.elapsed()))
         print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
 
