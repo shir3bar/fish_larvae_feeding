@@ -19,6 +19,8 @@ class MovieProcessor():
         self.bg_sub=cv2.createBackgroundSubtractorMOG2(history=num_train_frame, detectShadows=True)
         self.brighten = brighten
         self.blur = blur
+        if num_train_frame > self.num_frames:
+            num_train_frame=round(self.num_frames/4)
         self.num_train_frames=num_train_frame
         self.output_vid=vid_path[0:-4]+'_proccesed.avi'
         self.bbox_dict={}
@@ -272,7 +274,7 @@ class MovieCutter(MovieProcessor):
                 self.get_contours()  # find objects inside the mask, get a list of their bounding boxes
                 self.find_fish()
             self.write_movies()
-            if self.progressbar:
+            if self.progressbar and counter%10 == 0:
                 self.progressbar["value"]=self.counter
                 self.progressbar.update()
             self.counter += 1
