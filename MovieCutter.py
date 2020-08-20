@@ -178,12 +178,14 @@ class MovieProcessor():
 
 
 class MovieCutter(MovieProcessor):
-    def __init__(self, vid_path, save_dir, padding=250, fps=30, movie_format='.avi', movie_length=100,progressbar=[]):
+    def __init__(self, vid_path, save_dir, padding=250, fps=30, movie_format='.avi',
+                 movie_length=100,progressbar=[], trainlabel=[]):
         super().__init__(vid_path,save_dir)
         self.vid_path = vid_path
         self.padding = padding
         self.fps = fps
-        self.folder_name = save_dir+os.path.basename(vid_path)
+        folder = os.path.basename(vid_path).split('.')[0]
+        self.folder_name = os.path.join(save_dir,folder)
         self.movie_format = movie_format
         self.counter = 0
         self.movie_counter = 0
@@ -194,9 +196,10 @@ class MovieCutter(MovieProcessor):
         self.med_laplacian = []
         self.movie_length = movie_length + 1
         self.log = pd.DataFrame(columns=['movie_name', 'frame', 'coordinates', 'label'])
-        self.progressbar=progressbar
-        self.progressbar["maximum"]=self.num_frames-self.num_train_frames
-        self.progressbar["value"]=0
+        self.progressbar = progressbar
+        self.progressbar["maximum"] = self.num_frames-self.num_train_frames
+        self.progressbar["value"] = 0
+        self.trainlabel = trainlabel
 
     def in_bounds(self, centroid):
         x1 = centroid[1] - self.padding
@@ -263,7 +266,11 @@ class MovieCutter(MovieProcessor):
             self.folder_name = self.folder_name + '2'
             os.mkdir(self.folder_name)
         fps = FPS().start()
+        self.trainlabel.configure(text='training background subtractor...')
+        self.trainlabel.update()
         self.train_bg_subtractor()
+        self.trainlabel.configure(text='begin cutting:')
+        self.trainlabel.update()
         while True:
             grabbed, self.frame = self.cap.read()  # get frame
             if not grabbed:
