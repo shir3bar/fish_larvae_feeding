@@ -15,12 +15,9 @@ class MovieProcessor():
         self.min_height = min_height
         self.SHAPE = [1080,1920]
         self.cap=cv2.VideoCapture(vid_path)
-        self.num_frames=count_frames(self.vid_path)
         self.bg_sub=cv2.createBackgroundSubtractorMOG2(history=num_train_frame, detectShadows=True)
         self.brighten = brighten
         self.blur = blur
-        if num_train_frame > self.num_frames:
-            num_train_frame=round(self.num_frames/4)
         self.num_train_frames=num_train_frame
         self.output_vid=vid_path[0:-4]+'_proccesed.avi'
         self.bbox_dict={}
@@ -197,8 +194,6 @@ class MovieCutter(MovieProcessor):
         self.movie_length = movie_length + 1
         self.log = pd.DataFrame(columns=['movie_name', 'frame', 'coordinates', 'label'])
         self.progressbar = progressbar
-        self.progressbar["maximum"] = self.num_frames-self.num_train_frames
-        self.progressbar["value"] = 0
         self.trainlabel = trainlabel
 
     def in_bounds(self, centroid):
@@ -265,6 +260,14 @@ class MovieCutter(MovieProcessor):
         except FileExistsError:
             self.folder_name = self.folder_name + '2'
             os.mkdir(self.folder_name)
+        self.trainlabel.configure(text='counting frames...')
+        self.trainlabel.update()
+        self.num_frames = count_frames(self.vid_path)
+        if self.num_train_frames > self.num_frames:
+            self.num_train_frames=round(self.num_frames/4)
+        if self.progressbar:
+            self.progressbar["maximum"] = self.num_frames - self.num_train_frames
+            self.progressbar["value"] = 0
         fps = FPS().start()
         self.trainlabel.configure(text='training background subtractor...')
         self.trainlabel.update()
