@@ -181,10 +181,10 @@ class MovieCutter(MovieProcessor):
     def __init__(self, vid_path, save_dir, padding=250, fps=30, movie_format='.avi', movie_length=100,progressbar=[]):
         super().__init__(vid_path,save_dir)
         self.vid_path = vid_path
-        os.chdir(self.folder_path)
+        #os.chdir(self.folder_path)
         self.padding = padding
         self.fps = fps
-        self.folder_name = ''.join(vid_path.split(os.path.sep)[-1].split('.')[0:-1])
+        self.folder_name = self.folder_path+''.join(vid_path.split(os.path.sep)[-1].split('.')[0:-1])
         self.movie_format = movie_format
         self.counter = 0
         self.movie_counter = 0
