@@ -274,7 +274,7 @@ class MovieCutter(MovieProcessor):
                 self.get_contours()  # find objects inside the mask, get a list of their bounding boxes
                 self.find_fish()
             self.write_movies()
-            if self.progressbar and counter%10 == 0:
+            if self.progressbar and self.counter%10 == 0:
                 self.progressbar["value"]=self.counter
                 self.progressbar.update()
             self.counter += 1
