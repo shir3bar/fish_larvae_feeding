@@ -6,52 +6,54 @@ import pandas as pd
 from imutils.video import count_frames
 
 
-class MovieProcessor():
-    def __init__(self,vid_path, save_dir, brighten = True, blur = False, min_width = 70, min_height = 70,num_train_frame=500):
+class MovieProcessor:
+    """Process videos to detect fish larvae using classic image processing with OpenCV."""
+    def __init__(self,vid_path, save_dir, brighten=True, blur=False,
+                 min_width=70, min_height=70, num_train_frame=500, fps=30):
+        """Initiate a processor object. inputs:
+        vid_path - location of the video to process
+        save_dir - location to save the processed video
+        brighten - optional, brighten the image as part of the processing flow
+        blur - optional, blur the image as part of the processing flow
+        min_width - minimum width of a single blob, helps filter small non-fish objects
+        min_height - minimum height of a single blob, helps filter small non-fish objects
+        num_train_frame - number of frames used to train the background subtractor
+        fps - define the rate of frames per second for the processed video output"""
         self.vid_path = vid_path
-        self.folder_path=save_dir #os.path.sep.join(vid_path.split(os.path.sep)[0:-1])
-        self.centroid_list = []
-        self.min_width = min_width
-        self.min_height = min_height
-        self.SHAPE = [1080,1920]
-        self.cap=cv2.VideoCapture(vid_path)
-        self.bg_sub=cv2.createBackgroundSubtractorMOG2(history=num_train_frame, detectShadows=True)
+        self.folder_path = save_dir
+        self.min_width = min_width  # minimal blob width
+        self.min_height = min_height  # minimal blob height
         self.brighten = brighten
         self.blur = blur
-        self.num_train_frames=num_train_frame
-        self.output_vid=vid_path[0:-4]+'_proccesed.avi'
-        self.bbox_dict={}
-        self.frame = None
-        # codec for video writing, see: https://www.pyimagesearch.com/2016/02/22/writing-to-video-with-opencv/:
+        self.num_train_frames = num_train_frame
+        self.fps = 30
+        # Create a video capture object:
+        self.cap = cv2.VideoCapture(vid_path)
+        # Get the frame dimensions:
+        self.SHAPE = [self.cap.get(cv2.CAP_PROP_FRAME_WIDTH), self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)]
+        # Create background subtractor object:
+        self.bg_sub = cv2.createBackgroundSubtractorMOG2(history=num_train_frame, detectShadows=True)
+        # Name the output video:
+        self.output_vid = vid_path[0:-4]+'_proccesed.avi'
+        # The bbox_dict will house the coordinates and dimensions of the bounding boxes around the detected objects,
+        # as well as the centroids of these bounding boxes:
+        self.bbox_dict = {}
+        self.frame = None # video frame, initialize at nobe
+        # codec for video writing, see https://www.pyimagesearch.com/2016/02/22/writing-to-video-with-opencv/:
         self.fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-        # the video writer is defined by output filename, selected codec, the fps selected is the same as the input video,
-        # frame size that is also identical to input video, and a boolean specific whether to save a color video:
-
-
 
 
     @staticmethod
     def get_centroid(x, y, w, h):
-        """ Get bounding box centroid"""
-        x1 = int(w / 2)
-        y1 = int(h / 2)
-
-        cx = x + x1
-        cy = y + y1
-
-        return (cx, cy)
-
+        """ Get the centroid of the bouding box defined by x, y, w and h"""
+        cx = x + int(w / 2)
+        cy = y + int(h / 2)
+        return cx, cy
 
     def get_contours(self):
-        """ Get the blobs or contours detected in the image
-        input:
-        image - a frame
-        min_width - the minimal width of a blob, all blobs below threshold will be disregarded
-        min_height - the minimal width of a blob, all blobs below threshold will be disregarded
-        returns:
-        matches - a list of tuples, each tuple contains two tuples with information about each detected blob.
-            first tuple is the bounding box coordinates, width and height
-            second tuple contains the centroid coordinates
+        """ Get the blobs/contours/fish detected in the image.
+        Each blob gets an entry in the bbox_dict - the key is the bounding box coordinates and dimensions,
+        the value is the centroid of that bounding box.
         """
 
         # find all contours/blobs in the frame:
@@ -66,25 +68,31 @@ class MovieProcessor():
                     h >= self.min_height) and (w <= self.min_width*10) and (h <= self.min_height*10)
 
             if not contour_valid:
+                # if the contour isn't valid, skip it:
                 continue
-                # Get bbox centroid:
+            # Get bbox centroid:
             centroid = self.get_centroid(x, y, w, h)
-            self.bbox_dict[(x, y, w, h)]=centroid
+            # Create the bbox entry:
+            self.bbox_dict[(x, y, w, h)] = centroid
 
     def draw_boxes(self):
         """ Draw bounding boxes around objects in image
         """
-        BOUNDING_BOX_COLOUR = (255, 10, 0)  # BGR
-        CENTROID_COLOUR = (255, 192, 0)  # BGR
-        gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-        self.processed_frame=self.frame
-        for contour, centroid in self.bbox_dict.items():
-            x, y, w, h = contour
+        BOUNDING_BOX_COLOUR = (255, 10, 0)  # BGR instead of RGB
+        CENTROID_COLOUR = (255, 192, 0)  # BGR instead of RGB
+        gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)   # convert the image to grayscale
+        self.processed_frame = self.frame  # begin depicting the processing by using the base frame
+        for bbox, centroid in self.bbox_dict.items():
+            # for each blob detected
+            x, y, w, h = bbox
+            # cut only the blob out of the grayscale and calculate the Laplacian as a measure of image blurriness:
             subframe = gray[y:y + h, x:x + w]
             lap = cv2.Laplacian(subframe, cv2.CV_64F).var()
+            # Draw the bounding box and centroid on the processed frame:
             cv2.rectangle(self.processed_frame, (x, y), (x + w - 1, y + h - 1),
                           BOUNDING_BOX_COLOUR, 4)
             cv2.circle(self.processed_frame, centroid, 2, CENTROID_COLOUR, -1)
+            # Write the laplacian value next to the detected object:
             cv2.putText(self.processed_frame, f'{lap:.2f}', (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
 
 
@@ -161,8 +169,9 @@ class MovieProcessor():
         while True:
             grabbed, self.frame = self.cap.read()  # get frame
             if not grabbed:
+                # If the video is finished, stop the loop
                 break
-            counter+=1
+            counter += 1
             self.get_filter()  # get foreground mask
             self.get_contours()  # find objects inside the mask, get a list of their bounding boxes
             self.draw_boxes()  # draw bounding boxes on original frame
