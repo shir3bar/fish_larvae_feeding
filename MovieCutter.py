@@ -30,7 +30,7 @@ class MovieProcessor:
         # Create a video capture object:
         self.cap = cv2.VideoCapture(vid_path)
         # Get the frame dimensions:
-        self.SHAPE = [self.cap.get(cv2.CAP_PROP_FRAME_WIDTH), self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)]
+        self.SHAPE = [self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT), self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)]
         # Create background subtractor object:
         self.bg_sub = cv2.createBackgroundSubtractorMOG2(history=num_train_frame, detectShadows=True)
         # Name the output video:
@@ -40,7 +40,7 @@ class MovieProcessor:
         self.bbox_dict = {}
         self.frame = None # video frame, initialize at nobe
         # codec for video writing, see https://www.pyimagesearch.com/2016/02/22/writing-to-video-with-opencv/:
-        self.fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+        self.fourcc = cv2.VideoWriter_fourcc(*'RGBA')  #cv2.VideoWriter_fourcc(*"MJPG")  # cv2.VideoWriter_fourcc( '3', 'I', 'V', 'D')
 
 
     @staticmethod
@@ -189,7 +189,7 @@ class MovieCutter(MovieProcessor):
         super().__init__(vid_path,save_dir)
         self.padding = padding
         self.fps = fps
-        folder = os.path.basename(vid_path).split('.')[0]
+        folder = ''.join(os.path.basename(vid_path).split('.')[0:-1])
         self.folder_name = os.path.join(save_dir,folder)
         self.movie_format = movie_format
         self.counter = 0
@@ -210,13 +210,13 @@ class MovieCutter(MovieProcessor):
             x1 = 0
         x2 = centroid[1] + self.padding
         if x2 > self.SHAPE[0]:
-            x2 = self.SHAPE[0]
+            x2 = int(self.SHAPE[0])
         y1 = centroid[0] - self.padding
         if y1 < 0:
             y1 = 0
-        y2 = centroid[0] + self.padding
+        y2 = int(centroid[0] + self.padding)
         if y2 > self.SHAPE[1]:
-            y2 = self.SHAPE[1]
+            y2 = int(self.SHAPE[1])
         return x1, x2, y1, y2
 
     def find_fish(self):
@@ -250,11 +250,10 @@ class MovieCutter(MovieProcessor):
                 continue
             cutout = []
             x, y, w, h = key
-            subframe = self.frame[y:y + h, x:x + w]
-            subframe = cv2.cvtColor(subframe, cv2.COLOR_BGR2GRAY)
+            gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+            subframe = gray[y:y + h, x:x + w]
             lap = cv2.Laplacian(subframe, cv2.CV_64F).var()
-            cutout = self.frame[entry[0][0]:entry[0][1], entry[1][0]:entry[1][1]]
-            cutout = cv2.cvtColor(cutout, cv2.COLOR_BGR2GRAY)
+            cutout = gray[entry[0][0]:entry[0][1], entry[1][0]:entry[1][1]]
             # lap=cv2.Laplacian(cutout, cv2.CV_64F).var()
             entry[3].append(lap)
             output = np.zeros((self.padding * 2, self.padding * 2), dtype="uint8")

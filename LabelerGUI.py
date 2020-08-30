@@ -288,6 +288,7 @@ class MoviePlayer:
         self.ent_vid_idx.insert(0, self.curr_vid_idx)  # write the current index
         # Change current movie name:
         self.curr_movie_name = os.path.basename(self.file_paths[self.curr_vid_idx])
+        print(self.curr_vid_idx,self.curr_movie_name)
         # If integrated with the FeedingLabeler GUI:
         if self.label_var:
             # Set the label variable to the label of the video in the log dataframe:
