@@ -19,9 +19,8 @@ class FeedingLabeler:
      please see the 'MovieCutterGUI.py' file in this repository.
      For more infomation about the Movie Player functionality, please see the Movie Player class DocString."""
     # Class variables to define which key strokes will control the labeling:
-    FEEDING_CHAR = 'a'  # Pressing 'a' will set the label variable to 'Feeding'
-    NOT_FEEDING_CHAR = 's'  # Pressing 's' will set the label variable to 'Not Feeding'
-    OTHER_CHAR = 'd'  # Pressing 'd' will set the label variable to 'Other'
+    KEYS_TO_LABELS = {'q': 'Not Feeding', 'w': 'Other', 'a': 'Feeding Success',
+                      's': 'Feeding Fail', 'd': 'Feeding I&O', 'z': 'Spitting'}
     def __init__(self):
         """ Initialize a new instance of the FeedingLabeler application."""
         # This is a tkinter based GUI
@@ -52,12 +51,21 @@ class FeedingLabeler:
         # Not feeding is when the fish is visible, in focus and is not feeding:
         self.btn_not_feed = tk.Radiobutton(master=self.frm_label, text='Not Feeding', variable=self.label,
                                            value='Not Feeding', command=self.set_label)
-        # Feeding is when the fish can been seen swallowing a rotifer (small, round object) successfully:
-        self.btn_feed = tk.Radiobutton(master=self.frm_label, text='Feeding', variable=self.label,
-                                       value='Feeding', command=self.set_label)
         # Other is when the main part of the frame doesn't contain a fish or the fish is blurry and out-of-focus:
         self.btn_other = tk.Radiobutton(master=self.frm_label, text='Other', variable=self.label,
                                         value='Other', command=self.set_label)
+        # Feeding success is when the fish can been seen swallowing a rotifer (small, round object) successfully:
+        self.btn_feed_s = tk.Radiobutton(master=self.frm_label, text='Feeding Success', variable=self.label,
+                                         value='Feeding Success', command=self.set_label)
+        # Feeding fail is when the fish cannot swallow the food item:
+        self.btn_feed_f = tk.Radiobutton(master=self.frm_label, text='Feeding Fail', variable=self.label,
+                                         value='Feeding Fail', command=self.set_label)
+        # Feeding I&O (In and Out) is when the food item briefly and it pops out:
+        self.btn_feed_io = tk.Radiobutton(master=self.frm_label, text='Feeding I&O', variable=self.label,
+                                          value='Feeding I&O', command=self.set_label)
+        # Spitting is when the fish spits the food item out (forcefully):
+        self.btn_spitting = tk.Radiobutton(master=self.frm_label, text='Spitting', variable=self.label,
+                                           value='Spitting', command=self.set_label)
 
     def set_layout(self):
         """ Layout all the GUI widgets"""
@@ -67,9 +75,12 @@ class FeedingLabeler:
         self.window.columnconfigure(1, weight=1, minsize=500)
         # Place the widgets within the label frame:
         self.btn_load.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
-        self.btn_feed.grid(row=2, column=0, sticky="ew", padx=5, pady=10)
-        self.btn_not_feed.grid(row=3, column=0, sticky="ew", padx=5, pady=10)
-        self.btn_other.grid(row=4, column=0, sticky='ew', padx=5, pady=10)
+        self.btn_not_feed.grid(row=2, column=0, sticky="ew", padx=5, pady=10)
+        self.btn_other.grid(row=3, column=0, sticky='ew', padx=5, pady=10)
+        self.btn_feed_s.grid(row=4, column=0, sticky="ew", padx=5, pady=10)
+        self.btn_feed_f.grid(row=5, column=0, sticky="ew", padx=5, pady=10)
+        self.btn_feed_io.grid(row=6, column=0, sticky="ew", padx=5, pady=10)
+        self.btn_spitting.grid(row=7, column=0, sticky="ew", padx=5, pady=10)
         # Place the Save button:
         self.btn_save.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
         # Place the frame label within the window:
@@ -87,7 +98,29 @@ class FeedingLabeler:
                 if result == 'yes':
                     # Save labels if requested to by the user:
                     self.save_labels()
-        self.window.quit() # Close the window
+            # Delete videos tagged as 'Other':
+            self.delete_others()
+            # Check for missing video labels and prompt user:
+            if self.player.log.label.isna().any():
+                result = messagebox.askokcancel('Missing Labels',
+                                       'Some videos are missing labels, are you sure you want to leave?')
+                if result: # If the user is sure, close the window:
+                    self.window.quit()  # Close the window
+
+        self.window.quit()
+
+    def delete_others(self):
+        """ Upon closing, delete videos tagged as "Other" to free up space in the computer.
+        Ask user before deleting!"""
+        # Pop up a question dialog:
+        result = messagebox.askquestion('Delete Others', 'Do you want to delete "Others"?')
+        if result == 'yes':
+            # If the user wants to delete, iterate over all movies and remove the file and log entry:
+            for index, row in self.player.log.iterrows():
+                if row['label'] == 'Other':
+                    os.remove(os.path.join(self.player.directory, row['movie_name']))  # Remove file
+                    self.player.log.drop(index, inplace=True)  # Remove log entry
+            self.save_labels()  # Save the log
 
     def save_labels(self):
         """ Save video labels to log file"""
@@ -110,31 +143,21 @@ class FeedingLabeler:
     def bind_keystrokes(self):
         """ Use specific keystrokes to change the labels of each video.
         Meant to improve the workflow for the end user."""
-        self.window.bind(f"<{self.FEEDING_CHAR}>",self.set_label)  # For 'Feeding' label
-        self.window.bind(f"<{self.NOT_FEEDING_CHAR}>",self.set_label)  # For 'Not Feeding' label
-        self.window.bind(f"<{self.OTHER_CHAR}>",self.set_label)  # For 'Other' label
+        for char,label in self.KEYS_TO_LABELS.items():
+            self.window.bind(f'<{char}>',self.set_label)
+
 
     def set_label(self,event=None):
         """Commit changes made in to the video label from the GUI to the log dataframe.
         Handles changes made by either button click (trackpad or mouse) or keystroke (specified keyboard key)."""
+        # If label change was initiated by keystroke:
         if event:
-            # label change was initiated by keystroke
-            self.key_to_label(event)
+            # Set the label to the appropriate value:
+            self.label.set(self.KEYS_TO_LABELS[event.char])
         # Whether click or key, label variable value is retrieved and saved to the log dataframe:
         self.player.log.loc[self.player.log.movie_name == self.player.curr_movie_name, ['label']] \
             = self.label.get()
         self.log_saved = False  # Track changes that are not saved to .csv file
-
-    def key_to_label(self,event):
-        """ Translate key strokes to their chosen value of the label variable to display the selected label on the GUI.
-        """
-        # for each of the labels, check if the key stroked is it's associated char:
-        if event.char == self.FEEDING_CHAR:
-            self.label.set('Feeding')
-        elif event.char == self.NOT_FEEDING_CHAR:
-            self.label.set('Not Feeding')
-        elif event.char == self.OTHER_CHAR:
-            self.label.set('Other')
 
 
 class MoviePlayer:
@@ -196,9 +219,24 @@ class MoviePlayer:
     def bind_keystrokes(self):
         """ Use specific keystrokes to navigate between videos.
         Meant to improve the workflow for the end user."""
-        self.window.bind("<Left>",self.prev_vid)
-        self.window.bind("<Right>",self.next_vid)
-        self.window.bind("<space>",self.play_vid)
+        # Move to the previous video:
+        self.window.bind("<Left>", self.prev_vid)
+        # Move to the first video:
+        self.window.bind("<Right>", self.next_vid)
+        # Play the video:
+        self.window.bind("<space>", self.play_vid)
+        # Move to the previous frame:
+        self.window.bind('<,>', self.rewind_one_frame)
+        # Move to the next frame:
+        self.window.bind('<.>', self.display_frame)
+
+    def rewind_one_frame(self, event):
+        """ Move one frame backwards in the current video"""
+        # Get the current frame position:
+        curr_frame=self.curr_vid.get(cv2.CAP_PROP_POS_FRAMES)
+        # Rewind the video capture object so the next we'll display will be previous one:
+        self.curr_vid.set(cv2.CAP_PROP_POS_FRAMES, curr_frame-2)
+        self.display_frame()
 
     def load_directory(self):
         """ Load all videos from user-selected directory to the GUI.
@@ -269,7 +307,7 @@ class MoviePlayer:
         # display a prompt informing the user where the file was saved:
         messagebox.showinfo('Save Snapshot', f'Snapshot saved at {filepath}')
 
-    def display_frame(self):
+    def display_frame(self, event=None):
         """Read a single frame from the current video and display it onto the GUI."""
         ret, frame = self.curr_vid.read()  # Read a single frame
         self.frame = frame  # Save that frame
@@ -288,7 +326,6 @@ class MoviePlayer:
         self.ent_vid_idx.insert(0, self.curr_vid_idx)  # write the current index
         # Change current movie name:
         self.curr_movie_name = os.path.basename(self.file_paths[self.curr_vid_idx])
-        print(self.curr_vid_idx,self.curr_movie_name)
         # If integrated with the FeedingLabeler GUI:
         if self.label_var:
             # Set the label variable to the label of the video in the log dataframe:
