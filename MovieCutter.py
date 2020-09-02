@@ -31,8 +31,7 @@ class MovieProcessor:
         # Create a video capture object:
         self.cap = cv2.VideoCapture(vid_path)
         # Get the frame dimensions:
-        self.SHAPE = [self.cap.get(cv2.CAP_PROP_FRAME_WIDTH), self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)]
-        print(self.SHAPE)
+        self.SHAPE = [int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))]
         # Create background subtractor object:
         self.bg_sub = cv2.createBackgroundSubtractorMOG2(history=num_train_frame, detectShadows=True)
         # Name the output video:
@@ -324,8 +323,6 @@ class MovieCutter(MovieProcessor):
             gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
             # Get the object subframe and calculate laplacian on it:
             subframe = gray[y:(y + h), x:(x + w)]
-            print(x,x+w)
-            print(y,y+h)
             lap = cv2.Laplacian(subframe, cv2.CV_64F).var()
             # Cutout the video segment subframe:
             cutout = gray[ entry[1][0]:entry[1][1],entry[0][0]:entry[0][1]]
