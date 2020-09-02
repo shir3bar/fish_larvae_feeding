@@ -340,6 +340,8 @@ class MoviePlayer:
         self.curr_vid = cv2.VideoCapture(self.file_paths[self.curr_vid_idx])
         self.display_frame()  # display the first frame in the video
         self.window.title(self.curr_movie_name)  # change the GUI title to the current video name
+        # The main user of the software requested that the new video will start playing automatically:
+        self.play_vid()
 
     def play_vid(self,event=None):
         """ This method plays the video file currently loaded to the GUI.
@@ -375,6 +377,7 @@ class MoviePlayer:
             messagebox.showinfo('Done', 'Done! No more videos :)')  # Show a prompt to user stating that they're done
         self.set_vid(new_idx)  # Load the new video to GUI
 
+
     def prev_vid(self,event=None):
         """Load the previous video in the video list.
                 This method is invoke either by the next_vid button or by the Left-Arrow key stroke. """
@@ -384,7 +387,6 @@ class MoviePlayer:
             # if the new index is out of range, set it to the first video index:
             new_idx = 0
         self.set_vid(new_idx)  # Load the new video to GUI
-
 
 if __name__ == '__main__':
     FeedingLabeler()
