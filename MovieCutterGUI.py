@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter.filedialog import askopenfilenames, askdirectory
 from tkinter.ttk import Progressbar
 from tkinter import messagebox
-
+import os
 
 class CutterApp():
     """ An application for cutting videos of fish larvae into smaller (in frame size) and shorter (frame length)
@@ -34,7 +34,7 @@ class CutterApp():
         self.bar = Progressbar(self.window, length=300, orient="horizontal",
                                     style='black.Horizontal.TProgressbar', mode="determinate")
         self.vidpaths = []  # File paths for videos to be cut will be stored here
-        self.savepath = ''  # will contain a path selected by user where cut videos will be saved
+        self.savepath = None  # will contain a path selected by user where cut videos will be saved
         self.movie_cutters = []  # Movie cutter objects will be stored here
         self.num_vids_selected=None
         self.define_layout()
@@ -59,7 +59,6 @@ class CutterApp():
         # Open a system dialog to get the file path, multiple file selection enabled:
         self.vidpaths += list(askopenfilenames(filetypes=[("Video Files", ["*.mp4", "*.avi"]),
                                                          ("All Files", "*.*")]))
-        print(self.vidpaths)
         if not self.vidpaths:
             # if no file was chosen, stop the method:
             return
@@ -75,10 +74,26 @@ class CutterApp():
 
     def save_dir(self):
         """Get the directory to save the file."""
-        self.savepath = askdirectory()  # Open a system dialog to get the desired directory
+        # Ask where to save segments - in the same folder as the video being cut or in a new place?
+        default_path = messagebox.askquestion('Use Default Path',
+                                              "Would like to save the segments in "
+                                              "the same directory as the parent video?")
+        if default_path=='yes':
+            # We will handle this in the for loop below
+            multiple_save_paths = True
+        else:
+            # Get the new directory desired by the user, please note it will be one directory for all videos being cut:
+            multiple_save_paths = False
+            self.savepath = askdirectory()
+            # However there will be subdirectories within this for each video separately.
+
         if self.vidpaths:
             # If a video file was already chosen with the open_vid method, create a new list of MovieCutter objects:
             for i in range(self.num_vids_selected):
+                if multiple_save_paths:
+                    # If we're saving in the same directory as the parent vid, get the directory path:
+                    self.savepath = os.path.dirname(self.vidpaths[i])
+                # Define a new movie cutter object:
                 self.movie_cutters.append(MovieCutter(self.vidpaths[i], self.savepath,
                                                       trainlabel=self.lbl_training, progressbar=self.bar))
             # Display the next set of user instructions on the GUI:
