@@ -238,6 +238,7 @@ class MovieCutter(MovieProcessor):
         # And now the widgets and GUI integrations:
         self.progressbar = progressbar  # tkinter progress bar widget
         self.trainlabel = trainlabel  # tkinter label widget
+        self.videos_released = False   # monitors whether video resources were closed properly
 
 
     def get_bounds(self, centroid):
@@ -353,7 +354,6 @@ class MovieCutter(MovieProcessor):
         except FileExistsError:
             # If a folder name already exists, add a timestamp to the folder name:
             current_time = datetime.now().strftime("%H%M%S")
-            print(current_time)
             self.folder_name = self.folder_name + current_time
             os.mkdir(self.folder_name)
 
@@ -399,9 +399,9 @@ class MovieCutter(MovieProcessor):
 
             self.write_movies()  # Write a frame to the movie segments initiated
 
-            if self.progressbar and self.counter%10 == 0:
+            if self.progressbar and self.counter % 10 == 0:
                 # Update the progress bar in decimal increments:
-                self.progressbar["value"]=self.counter
+                self.progressbar["value"] = self.counter
                 self.progressbar.update()
 
             self.counter += 1  # Monitor the number of frames in the original vid
@@ -409,12 +409,17 @@ class MovieCutter(MovieProcessor):
         # When done, release the remaining resources and save log:
         self.close_everything()
 
-    def close_everything(self):
-        """ Release resources, save log and display end message."""
+    def release_videos(self):
+        """ Release all video files"""
         for movie in self.movie_dict.values():
             # Release all remaining segments
             movie[0].release()
         self.cap.release()  # Release the original video
+        self.videos_released = True
+
+    def close_everything(self):
+        """ Release resources, save log and display end message."""
+        self.release_videos()
         self.fps_timer.stop()  # Stop the fps_timer
         self.log.to_csv(self.folder_name + os.path.sep + 'log.csv', index=False)  # Save the log dataframe to file
         self.update_gui_lbl(self.END_MSG) # Inform the user cutting is done

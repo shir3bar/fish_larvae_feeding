@@ -33,34 +33,44 @@ class CutterApp():
         # Progress bar to show the progression of the cutting process:
         self.bar = Progressbar(self.window, length=300, orient="horizontal",
                                     style='black.Horizontal.TProgressbar', mode="determinate")
-        self.vidpaths = ()  # File paths for videos to be cut will be stored here
+        self.vidpaths = []  # File paths for videos to be cut will be stored here
         self.savepath = ''  # will contain a path selected by user where cut videos will be saved
         self.movie_cutters = []  # Movie cutter objects will be stored here
         self.num_vids_selected=None
-        # Set the layout using the grid geometry manager:
+        self.define_layout()
+        # Set a closing procedure for the GUI window and start the mainloop:
+        self.window.mainloop()
+
+    def define_layout(self):
+        """Set the layout using the grid geometry manager:"""
         self.window.rowconfigure([0,1],weight=1,minsize=100)
         self.btn_open.grid(row=0,column=0, sticky="ew",padx=5,pady=2)
         self.btn_save.grid(row=0,column=1,sticky="ew",padx=5,pady=2)
         self.btn_start.grid(row=0,column=2,sticky="ew",padx=5,pady=2)
         self.frm_btn.grid(row=0)
-        self.lbl_movie_counter.grid(row=1,column=0,sticky="nsew")
-        self.lbl_training.grid(row=2,column=0,sticky="nsew")
+        self.lbl_movie_counter.grid(row=2,column=0,sticky="nsew")
+        self.lbl_training.grid(row=1,column=0,sticky="nsew")
         self.bar.grid(row=3,sticky="e",pady=5,padx=5)
-        self.movie_cutter = None   # The MovieCutter object will be created once the user selects a file and directory
-        self.window.mainloop()
+
+
 
     def open_vid(self):
         """Get the video file for cutting from the user."""
         # Open a system dialog to get the file path, multiple file selection enabled:
-        self.vidpaths = askopenfilenames(filetypes=[("Video Files", ["*.mp4","*.avi"]), ("All Files", "*.*")])
+        self.vidpaths += list(askopenfilenames(filetypes=[("Video Files", ["*.mp4", "*.avi"]),
+                                                         ("All Files", "*.*")]))
+        print(self.vidpaths)
         if not self.vidpaths:
             # if no file was chosen, stop the method:
             return
         self.window.title(f"Movie Cutter - {self.vidpaths[0]}")  # Set the title of the GUI to match the first file path
-        self.num_vids_selected=len(self.vidpaths)
+        self.num_vids_selected = len(self.vidpaths)
         # Display the next set of user instructions on the GUI:
         self.lbl_training.configure(text=self.SAVE_MSG)
         self.lbl_training.update()
+        # Inform the user how many videos are currently selected for cutting:
+        self.lbl_movie_counter.configure(text=f'{self.num_vids_selected} videos were selected for cutting')
+        self.lbl_movie_counter.update()
         self.bar["value"] = 0   # Set the progress bar value to 0
 
     def save_dir(self):
@@ -83,6 +93,7 @@ class CutterApp():
                 self.lbl_movie_counter.configure(text=f'Video {i+1} / {self.num_vids_selected}')
                 # Cut movies one after the other:
                 self.movie_cutters[i].cut()  # see the MovieCutter class for more details
+                self.bar['value'] = 0
             # Note: the progress bar is updated inside the cut method of the MovieCutter class
             # Prompt user when done, show where the video segments were saved:
             messagebox.showinfo('Done Cutting', f'Videos saved to subdirectories at: {self.savepath} ')
