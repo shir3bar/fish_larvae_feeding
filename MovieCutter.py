@@ -3,8 +3,7 @@ import os
 import cv2
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from imutils.video import count_frames
+from datetime import datetime
 
 
 class MovieProcessor:
@@ -27,7 +26,7 @@ class MovieProcessor:
         self.brighten = brighten
         self.blur = blur
         self.num_train_frames = num_train_frame
-        self.fps = 30
+        self.fps = fps
         # Create a video capture object:
         self.cap = cv2.VideoCapture(vid_path)
         # Get the frame dimensions:
@@ -198,6 +197,7 @@ class MovieCutter(MovieProcessor):
     BG_SUB_TRAIN_MSG = 'training background subtractor...'
     CUTTING_MSG = 'begin cutting:'
     END_MSG = 'Done!'
+    MOVIE_PREFIX = 'cutout_'  # movie file name prefix
 
     def __init__(self, vid_path, save_dir, padding=250, fps=30, movie_format='.avi',
                  movie_length=100,progressbar=[], trainlabel=[]):
@@ -209,13 +209,17 @@ class MovieCutter(MovieProcessor):
         fps - set the frames per second for the cut videos
         movie_length - sets the number of frames in each cut segment
         progressbar - a tk progressbar widget, optional integration, to show updates on the MovieCutterGUI
-        trainlabel - a tk label widget, optional integration, to show updates on the MovieCutterGUI"""
+        trainlabel - a tk label widget, optional integration, to show updates on the MovieCutterGUI
+        movie - an index of current video if several videos were selected in the GUI."""
         # Invoke the parent (movie processor) initialization:
         super().__init__(vid_path,save_dir)
         self.padding = padding   # Save the padding, the video frame size would be padding*2 X padding*2
         self.fps = fps
-        # Create a new folder in the save directory, named after the video file:
-        folder = ''.join(os.path.basename(vid_path).split('.')[0:-1])
+        # Get parent video name:
+        self.parent_video_name = os.path.basename(vid_path)
+        # this can be filled with '.' as it is usually dates of videos, so we'll get rid of them:
+        folder=''.join(self.parent_video_name.split('.')[0:-1])
+        # and create a new folder in the save directory, named after the video file:
         self.folder_name = os.path.join(save_dir,folder)
 
         self.movie_format = movie_format
@@ -227,13 +231,14 @@ class MovieCutter(MovieProcessor):
         # Movie_dict holds the coordinates and bounding boxes of the fish as keys,
         # and the video capture objects as values:
         self.movie_dict = {}
-        self.movie_name = 'cutout_'  # movie name prefix
         self.med_laplacian = []  # mean laplacian value for each video segment
         self.movie_length = movie_length + 1  # Set the length of movies
-        self.log = pd.DataFrame(columns=['movie_name', 'frame', 'coordinates', 'label'])  # initiate the log dataframe
-        # And now the widgets:
-        self.progressbar = progressbar
-        self.trainlabel = trainlabel
+        # Initiate the log dataframe:
+        self.log = pd.DataFrame(columns=['movie_name','parent_video','frame', 'coordinates', 'label'])
+        # And now the widgets and GUI integrations:
+        self.progressbar = progressbar  # tkinter progress bar widget
+        self.trainlabel = trainlabel  # tkinter label widget
+
 
     def get_bounds(self, centroid):
         """ Get the bounds of a new video segment. This is makes sure all video
@@ -282,15 +287,15 @@ class MovieCutter(MovieProcessor):
         """ Create a new video for a fish. Create the name and full path for the movie and update
         the movie dictionary with a new video capture object. Update the log dataframe with the movie details."""
         # Create a file name for the video segment:
-        new_name = self.movie_name + 'frame' + str(self.counter) + 'fish' + \
+        new_name = self.MOVIE_PREFIX + 'frame' + str(self.counter) + 'fish' + \
                    str(self.fish_idx) + self.movie_format
         movie_path = self.folder_name + os.path.sep + new_name  # Create the full path for the video segment
         # Create a list with the VideoWriter object for the new fish and the video file path:
         self.movie_dict[contour] = [cv2.VideoWriter(movie_path, self.fourcc, self.fps,
                                                     (self.padding * 2, self.padding * 2), False), movie_path]
         # Create a new log entry:
-        self.log.loc[self.movie_counter, :] = {'movie_name': new_name, 'frame': self.counter,
-                                               'coordinates': centroid, 'label': None}
+        self.log.loc[self.movie_counter, :] = {'movie_name': new_name, 'parent_video': self.vid_path,
+                                               'frame': self.counter, 'coordinates': centroid, 'label': None}
 
     def close_segment(self,laplacian,key):
         """Close a movie segment, release resources and check if it is too blurry."""
@@ -340,17 +345,23 @@ class MovieCutter(MovieProcessor):
         self.trainlabel.configure(text=msg)
         self.trainlabel.update()
 
-    def pre_cutting(self):
-        """ Does the logistics before starting to cut the videos, create directory for segments, train background
-        subtractor, update GUI if applicable."""
+    def create_saving_dir(self):
+        """ Create a directory to save movie segments in, name it after video file name."""
         try:
             # Try creating a new folder for the segments:
             os.mkdir(self.folder_name)
         except FileExistsError:
-            # If a folder name already exists, add a 2 to the folder name:
-            self.folder_name = self.folder_name + '2'
+            # If a folder name already exists, add a timestamp to the folder name:
+            current_time = datetime.now().strftime("%H%M%S")
+            print(current_time)
+            self.folder_name = self.folder_name + current_time
             os.mkdir(self.folder_name)
-            # Get the number of frames in the original video:
+
+    def pre_cutting(self):
+        """ Does the logistics before starting to cut the videos, create directory for segments, train background
+        subtractor, update GUI if applicable."""
+        self.create_saving_dir()  # set up new directory
+        # Get the number of frames in the original video:
         self.num_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
         # if the number of frames in the video is smaller than the number of training frames
         # for the background subtractor, reduce the amount of training frames:
