@@ -219,16 +219,12 @@ class MoviePlayer:
     def bind_keystrokes(self):
         """ Use specific keystrokes to navigate between videos.
         Meant to improve the workflow for the end user."""
-        # Move to the previous video:
-        self.window.bind("<Left>", self.prev_vid)
-        # Move to the first video:
-        self.window.bind("<Right>", self.next_vid)
-        # Play the video:
-        self.window.bind("<space>", self.play_vid)
-        # Move to the previous frame:
-        self.window.bind('<,>', self.rewind_one_frame)
-        # Move to the next frame:
-        self.window.bind('<.>', self.display_frame)
+        # Define pairs of keystrokes and actions in a dictionary:
+        key_dict = {"<Left>": self.prev_vid, "<Right>": self.next_vid, "<space>": self.play_vid,
+                    '<,>': self.rewind_one_frame, '<.>': self.display_frame, '<e>': self.get_snapshot}
+        # Bind them in the GUI window:
+        for key, action in key_dict.items():
+            self.window.bind(key,action)
 
     def rewind_one_frame(self, event):
         """ Move one frame backwards in the current video"""
@@ -292,17 +288,18 @@ class MoviePlayer:
 
         self.btn_play.focus_set()  # Move the focus from the ent_vid_idx text field to the play button
 
-    def get_snapshot(self):
+    def get_snapshot(self, event=None):
         """ Save the current frame as an image file. This method is activated by the snapshot button. """
-        path = self.directory + os.path.sep + 'snapshots'  # define the path where snapshots are saved
+        folderpath = self.directory + os.path.sep + 'snapshots'  # define the path where snapshots are saved
         if self.snap_idx == 0:
             try:
-                os.mkdir(path)  # If it's the first snap taken, try creating the path
-            except:
+                os.mkdir(folderpath)  # If it's the first snap taken, try creating the path
+            except OSError:
                 print('Snap directory already exists!')  # if it exists, all good, just print a prompt
         # define the filename according to the following format - movie-name(without .avi)_snap_snap-id-number:
-        filename = self.curr_movie_name[0:-4] + '_snap' + str(self.snap_idx) + '.jpg'
-        cv2.imwrite(path + os.path.sep + filename, self.frame)  # save snapshot to file
+        filename = self.curr_movie_name.split('.')[0] + '_snap' + str(self.snap_idx) + '.jpg'
+        filepath = folderpath + os.path.sep + filename
+        cv2.imwrite(filepath, self.frame)  # save snapshot to file
         self.snap_idx += 1 # update snap index
         # display a prompt informing the user where the file was saved:
         messagebox.showinfo('Save Snapshot', f'Snapshot saved at {filepath}')
