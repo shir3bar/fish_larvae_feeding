@@ -30,7 +30,7 @@ class FeedingLabeler:
         self.window = tk.Tk()
         # Define the widgets containing the labels for the videos:
         self.define_label_frm()
-        self.btn_save = tk.Button(master=self.window,text='Save Labels', command=self.save_labels)
+        self.btn_save = tk.Button(master=self.window, text='Save Labels', command=self.save_labels)
         # Set the layout of the labeling window:
         self.set_layout()
         # Define the movie player that will handle video display and navigation,
@@ -328,7 +328,10 @@ class MoviePlayer:
         if self.comment_widget:
             # Write the comment data from the log to the comment entry field,
             # get the text from dataframe:
-            txt=self.log.loc[self.log.movie_name == self.curr_movie_name].comments.values[0]
+            txt = self.log.loc[self.log.movie_name == self.curr_movie_name].comments.values[0]
+            if pd.isnull(txt):
+                # change the dataframe's null value to present an empty string in the GUI:
+                txt = ''
             self.comment_widget.delete(0, tk.END)  # delete any existing text
             self.comment_widget.insert(0, txt)  # insert the text
 
