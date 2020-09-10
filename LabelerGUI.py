@@ -152,6 +152,9 @@ class FeedingLabeler:
         Handles changes made by either button click (trackpad or mouse) or keystroke (specified keyboard key)."""
         # If label change was initiated by keystroke:
         if event:
+            # If the keystroke is coming from an entry widget, ignore it:
+            if isinstance(event.widget, tk.Entry):
+                return
             # Set the label to the appropriate value:
             self.label.set(self.KEYS_TO_LABELS[event.char])
         # Whether click or key, label variable value is retrieved and saved to the log dataframe:
@@ -192,12 +195,13 @@ class MoviePlayer:
         self.pause = True  # Play/pause marker, to make the play button function as a pause as well
         self.define_vid_btn_frm()  # Define the buttons
         self.set_layout()  # Set the GUI layout
+        self.window.bind('<Key>',self.handle_keystroke)
 
     def define_vid_btn_frm(self):
         """ Define all the GUI buttons"""
         self.frm_vid_btns = tk.Frame(master=self.window)  # Frame container for all the buttons
         # Field for user selected video index:
-        self.ent_vid_idx = tk.Entry(master=self.frm_vid_btns,text=str(self.curr_vid_idx), width=3)
+        self.ent_vid_idx = tk.Entry(master=self.frm_vid_btns,name='ent_id',text=str(self.curr_vid_idx), width=3)
         self.ent_vid_idx.bind("<Return>", self.navigate_to_vid)  # When user presses "Enter", current video will change
         # Display total number of videos loaded:
         self.lbl_numvids = tk.Label(master=self.frm_vid_btns,text='/ '+str(self.num_vids))
@@ -224,16 +228,18 @@ class MoviePlayer:
         self.panel.grid(row=0, column=1, sticky='nsew')
         self.frm_vid_btns.grid(row=1, column=1)
 
-    def bind_keystrokes(self):
+
+    def handle_keystroke(self,event):
         """ Use specific keystrokes to navigate between videos.
         Meant to improve the workflow for the end user."""
+        # When typing into an entry, don't activate hot-keys
+        if isinstance(event.widget, tk.Entry):
+            return
         # Define pairs of keystrokes and actions in a dictionary:
         key_dict = { "0": self.play_vid, '1': self.get_snapshot, "4": self.prev_vid,
                      "6": self.next_vid, '<,>': self.rewind_one_frame, '<.>': self.display_frame}
-        # Bind them in the GUI window:
-        for key, action in key_dict.items():
-            self.window.bind(key,action)
-
+        if event.char in key_dict.keys():
+            key_dict[event.char](event)
     def rewind_one_frame(self, event):
         """ Move one frame backwards in the current video"""
         # Get the current frame position:
@@ -259,7 +265,6 @@ class MoviePlayer:
                     # if it's the log.csv file load it to a pandas data frame:
                     self.log_filepath = os.path.join(root, filename)   # save path
                     self.log = pd.read_csv(self.log_filepath)  # load log
-        self.bind_keystrokes()  # Bind keystrokes to GUI functions
         self.num_vids = len(self.file_paths)-1  # Get the total number of videos loaded
         self.lbl_numvids.configure(text='/ '+str(self.num_vids))  # display that number in the designated label
         self.lbl_numvids.update()  # update the gui label
@@ -270,7 +275,7 @@ class MoviePlayer:
         except:
             # In case of a mishap display a message to user:
             self.panel.create_text(250, 250, text='Video load failed')
-            raise
+            
 
     def handle_play(self, event=None):
         """ Handle play button click, if it is clicked once turn it into a pause button."""
@@ -358,7 +363,8 @@ class MoviePlayer:
         self.display_frame()  # display the first frame in the video
         self.window.title(self.curr_movie_name)  # change the GUI title to the current video name
         # Start playing the video automatically when a new video is set
-        self.play_vid(event=True)   # event is set to True so that the play button would be handled as if clicked
+        self.handle_play()
+        self.play_vid()   # event is set to True so that the play button would be handled as if clicked
 
     def play_vid(self,event=None):
         """ This method plays the video file currently loaded to the GUI.
@@ -370,6 +376,7 @@ class MoviePlayer:
         if event:
             # if the method was invoked via key stroke, then call the method that handles the play/pause functionality:
             self.handle_play()
+
         try:
             # Now, as long as pause isn't pressed, and the video doesn't end, sequentially display frames:
             if not self.pause:
@@ -387,6 +394,10 @@ class MoviePlayer:
     def next_vid(self,event=None):
         """Load the next video in the video list.
         This method is invoke either by the next_vid button or by the Right-Arrow key stroke. """
+        if event:
+            # When typing into an entry, don't activate hot-keys
+            if isinstance(event.widget, tk.Entry):
+                return
         self.curr_vid.release()   # Release the current video capture object
         new_idx = self.curr_vid_idx + 1  # Set the new video index
         if new_idx > self.num_vids:
@@ -398,6 +409,10 @@ class MoviePlayer:
     def prev_vid(self,event=None):
         """Load the previous video in the video list.
                 This method is invoke either by the next_vid button or by the Left-Arrow key stroke. """
+        if event:
+            # When typing into an entry, don't activate hot-keys
+            if isinstance(event.widget, tk.Entry):
+                return
         self.curr_vid.release()  # Release the current video capture object
         new_idx=self.curr_vid_idx - 1
         if new_idx < 0:
