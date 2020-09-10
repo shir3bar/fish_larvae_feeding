@@ -1,5 +1,5 @@
 # fish_larvae_feeding
-An evidence-based agriculture project using computer vision and deep learning to detect feeding behavior in videos of fish larvae grown in aquaculture - the farming of fish (and other marine creatures). 
+An evidence-based agriculture project using computer vision and deep learning to detect feeding behavior in videos of fish larvae grown in aquaculture (fish farms). 
 
 ## Motivation
 Fish is an important protein source. According to the FAO, fish provided more than 3.3 billion people with 20 percent of their average intake of animal proteins.
