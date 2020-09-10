@@ -19,8 +19,9 @@ class FeedingLabeler:
      please see the 'MovieCutterGUI.py' file in this repository.
      For more infomation about the Movie Player functionality, please see the Movie Player class DocString."""
     # Class variables to define which key strokes will control the labeling:
-    KEYS_TO_LABELS = {'q': 'Not Feeding', 'w': 'Other', 'a': 'Feeding Success',
-                      's': 'Feeding Fail', 'd': 'Feeding I&O', 'z': 'Spitting'}
+    KEYS_TO_LABELS = {'2': 'Feeding I&O', '3': 'Spitting', '5': 'Feeding Success',
+                      '7': 'Delete Video', '8': 'Other', '9': 'Feeding Fail'}
+
     def __init__(self):
         """ Initialize a new instance of the FeedingLabeler application."""
         # This is a tkinter based GUI
@@ -32,8 +33,10 @@ class FeedingLabeler:
         self.btn_save = tk.Button(master=self.window,text='Save Labels', command=self.save_labels)
         # Set the layout of the labeling window:
         self.set_layout()
-        # Define the movie player that will handle video display and navigation:
-        self.player = MoviePlayer(self.window,self.label)
+        # Define the movie player that will handle video display and navigation,
+        # we pass the label var and comment widget so that their values can be set when we load a new
+        # video to the GUI:
+        self.player = MoviePlayer(self.window, label_var=self.label, comment_widget=self.ent_comment)
         self.log_saved = True  # Track changes to the label log
         self.window.wm_title("Fish Labeler")
         # define what happens when the GUI window is closed by user:
@@ -47,25 +50,22 @@ class FeedingLabeler:
         self.label = tk.StringVar()  # this variable will hold the label for the current video
         self.label.set(None)  # No default value
         self.btn_load = tk.Button(master=self.frm_label, text='Load Movies', command=self.get_dir) # load movies
-        # Label options depicted as radio buttons, "Feeding","Not Feeding", "Other" -
-        # Not feeding is when the fish is visible, in focus and is not feeding:
-        self.btn_not_feed = tk.Radiobutton(master=self.frm_label, text='Not Feeding', variable=self.label,
-                                           value='Not Feeding', command=self.set_label)
-        # Other is when the main part of the frame doesn't contain a fish or the fish is blurry and out-of-focus:
-        self.btn_other = tk.Radiobutton(master=self.frm_label, text='Other', variable=self.label,
-                                        value='Other', command=self.set_label)
-        # Feeding success is when the fish can been seen swallowing a rotifer (small, round object) successfully:
-        self.btn_feed_s = tk.Radiobutton(master=self.frm_label, text='Feeding Success', variable=self.label,
-                                         value='Feeding Success', command=self.set_label)
-        # Feeding fail is when the fish cannot swallow the food item:
-        self.btn_feed_f = tk.Radiobutton(master=self.frm_label, text='Feeding Fail', variable=self.label,
-                                         value='Feeding Fail', command=self.set_label)
-        # Feeding I&O (In and Out) is when the food item briefly and it pops out:
-        self.btn_feed_io = tk.Radiobutton(master=self.frm_label, text='Feeding I&O', variable=self.label,
-                                          value='Feeding I&O', command=self.set_label)
-        # Spitting is when the fish spits the food item out (forcefully):
-        self.btn_spitting = tk.Radiobutton(master=self.frm_label, text='Spitting', variable=self.label,
-                                           value='Spitting', command=self.set_label)
+        # Label options depicted as radio buttons, because of the multitude of labels,
+        # we will create a list containing all the radio buttons, defining them iteratively:
+        self.btn_labels = []
+        label_list = ['Delete Video','Feeding Success','Feeding Fail','Feeding I&O','Spitting','Other']
+        for label_name in label_list:
+            self.btn_labels.append(tk.Radiobutton(master=self.frm_label, text=label_name, variable=self.label,
+                                                  value=label_name, command=self.set_label))
+            # An explanation on the labels:
+            # Feeding success is when the fish can been seen swallowing a rotifer (small, round object) successfully
+            # Feeding fail is when the fish cannot swallow the food item
+            # Feeding I&O (In and Out) is when the food item briefly and it pops out
+            # Spitting is when the fish spits the food item out (forcefully)
+            # Other is when the main part of the frame doesn't contain a fish or the fish is blurry and out-of-focus
+            self.lbl_comment = tk.Label(master=self.frm_label, text='Comments:')
+        self.ent_comment = tk.Entry(master=self.frm_label)
+        self.ent_comment.bind("<Return>",self.insert_comment)
 
     def set_layout(self):
         """ Layout all the GUI widgets"""
@@ -75,12 +75,13 @@ class FeedingLabeler:
         self.window.columnconfigure(1, weight=1, minsize=500)
         # Place the widgets within the label frame:
         self.btn_load.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
-        self.btn_not_feed.grid(row=2, column=0, sticky="ew", padx=5, pady=10)
-        self.btn_other.grid(row=3, column=0, sticky='ew', padx=5, pady=10)
-        self.btn_feed_s.grid(row=4, column=0, sticky="ew", padx=5, pady=10)
-        self.btn_feed_f.grid(row=5, column=0, sticky="ew", padx=5, pady=10)
-        self.btn_feed_io.grid(row=6, column=0, sticky="ew", padx=5, pady=10)
-        self.btn_spitting.grid(row=7, column=0, sticky="ew", padx=5, pady=10)
+        # Iterate over the label radio buttons to place them:
+        for i in range(len(self.btn_labels)):
+            self.btn_labels[i].grid(row=i+2, column=0, sticky='w',padx=5,pady=10)
+        new_row_num=i+4
+        # Place the comments field:
+        self.lbl_comment.grid(row=new_row_num, column=0, sticky='w', padx=5, pady=10)
+        self.ent_comment.grid(row=new_row_num+1, column=0, sticky='w', padx=5, pady=10)
         # Place the Save button:
         self.btn_save.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
         # Place the frame label within the window:
@@ -99,25 +100,25 @@ class FeedingLabeler:
                     # Save labels if requested to by the user:
                     self.save_labels()
             # Delete videos tagged as 'Other':
-            self.delete_others()
+            self.delete_videos()
             # Check for missing video labels and prompt user:
             if self.player.log.label.isna().any():
                 result = messagebox.askokcancel('Missing Labels',
                                        'Some videos are missing labels, are you sure you want to leave?')
-                if result: # If the user is sure, close the window:
-                    self.window.quit()  # Close the window
+                if not result: # If the user is sure, close the window:
+                    return  # Don't close the window
 
         self.window.quit()
 
-    def delete_others(self):
+    def delete_videos(self):
         """ Upon closing, delete videos tagged as "Other" to free up space in the computer.
         Ask user before deleting!"""
         # Pop up a question dialog:
-        result = messagebox.askquestion('Delete Others', 'Do you want to delete "Others"?')
+        result = messagebox.askquestion('Delete Videos', 'Do you want to delete the "Delete Video"s?')
         if result == 'yes':
             # If the user wants to delete, iterate over all movies and remove the file and log entry:
             for index, row in self.player.log.iterrows():
-                if row['label'] == 'Other':
+                if row['label'] == 'Delete Video':
                     os.remove(os.path.join(self.player.directory, row['movie_name']))  # Remove file
                     self.player.log.drop(index, inplace=True)  # Remove log entry
             self.save_labels()  # Save the log
@@ -144,8 +145,7 @@ class FeedingLabeler:
         """ Use specific keystrokes to change the labels of each video.
         Meant to improve the workflow for the end user."""
         for char,label in self.KEYS_TO_LABELS.items():
-            self.window.bind(f'<{char}>',self.set_label)
-
+            self.window.bind(f'{char}', self.set_label)
 
     def set_label(self,event=None):
         """Commit changes made in to the video label from the GUI to the log dataframe.
@@ -159,18 +159,26 @@ class FeedingLabeler:
             = self.label.get()
         self.log_saved = False  # Track changes that are not saved to .csv file
 
+    def insert_comment(self,event):
+        """Commits changes made to the comments entry field from the GUI to the log dataframe."""
+        self.player.log.loc[self.player.log.movie_name == self.player.curr_movie_name, ['comments']]= \
+            self.ent_comment.get()
+        self.log_saved = False
+        self.window.focus_set()
+
 
 class MoviePlayer:
     """A GUI designed to show videos cut by the Movie Cutting application.
      Once the user chooses a directory, all .avi files in that directory are mapped.
      The user can navigate between videos in the directory, play them and save snapshots."""
-    def __init__(self, window,label_var=[]):
+    def __init__(self, window,label_var=[],comment_widget=[]):
         """ Initialize a Movie Player instance.
         Function receives a tkinter window to build the app in.
         An optional label variable is used to interact with the Feeding Label application.
         """
         self.window = window
         self.label_var = label_var
+        self.comment_widget = comment_widget
         self.curr_vid_idx = 0  # Current video index
         self.num_vids = 0  # Total number of videos loaded
         self.panel = tk.Canvas(master=self.window, width=500, height=500)  # Used to display the video
@@ -190,7 +198,7 @@ class MoviePlayer:
         self.frm_vid_btns = tk.Frame(master=self.window)  # Frame container for all the buttons
         # Field for user selected video index:
         self.ent_vid_idx = tk.Entry(master=self.frm_vid_btns,text=str(self.curr_vid_idx), width=3)
-        self.ent_vid_idx.bind("<Return>", self.set_new_vid)  # When user presses "Enter", current video will change
+        self.ent_vid_idx.bind("<Return>", self.navigate_to_vid)  # When user presses "Enter", current video will change
         # Display total number of videos loaded:
         self.lbl_numvids = tk.Label(master=self.frm_vid_btns,text='/ '+str(self.num_vids))
         # Navigation buttons:
@@ -220,8 +228,8 @@ class MoviePlayer:
         """ Use specific keystrokes to navigate between videos.
         Meant to improve the workflow for the end user."""
         # Define pairs of keystrokes and actions in a dictionary:
-        key_dict = {"<Left>": self.prev_vid, "<Right>": self.next_vid, "<space>": self.play_vid,
-                    '<,>': self.rewind_one_frame, '<.>': self.display_frame, '<e>': self.get_snapshot}
+        key_dict = { "0": self.play_vid, '1': self.get_snapshot, "4": self.prev_vid,
+                     "6": self.next_vid, '<,>': self.rewind_one_frame, '<.>': self.display_frame}
         # Bind them in the GUI window:
         for key, action in key_dict.items():
             self.window.bind(key,action)
@@ -231,8 +239,9 @@ class MoviePlayer:
         # Get the current frame position:
         curr_frame=self.curr_vid.get(cv2.CAP_PROP_POS_FRAMES)
         # Rewind the video capture object so the next we'll display will be previous one:
-        self.curr_vid.set(cv2.CAP_PROP_POS_FRAMES, curr_frame-2)
-        self.display_frame()
+        if curr_frame != 0:
+            self.curr_vid.set(cv2.CAP_PROP_POS_FRAMES, curr_frame-2)
+            self.display_frame()
 
     def load_directory(self):
         """ Load all videos from user-selected directory to the GUI.
@@ -261,14 +270,13 @@ class MoviePlayer:
         except:
             # In case of a mishap display a message to user:
             self.panel.create_text(250, 250, text='Video load failed')
-
-
+            raise
 
     def handle_play(self, event=None):
         """ Handle play button click, if it is clicked once turn it into a pause button."""
         self.pause = not self.pause  # Now when the "Play" button will be clicked again it will pause the video
 
-    def set_new_vid(self,event):
+    def navigate_to_vid(self,event):
         """Receives video index from user via the ent_vid_idx and displays it in the GUI.
         This method is initiated when the user clicks 'Enter' or 'Return' inside the ent_vid_idx widget."""
         try:
@@ -311,6 +319,19 @@ class MoviePlayer:
         self.photo = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(frame))  # Convert frame to display it on GUI
         self.panel.create_image(0, 0, image=self.photo, anchor=tk.NW)  # Draw the image in the Panel widget
 
+    def get_log_entries(self):
+        """ Gets the label and comments fields from the log for the video that is loaded to the GUI"""
+        if self.label_var:
+            # Set the label variable to the label of the video in the log dataframe:
+            self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
+            # setting this label_var will also display the label in the labeler GUI
+        if self.comment_widget:
+            # Write the comment data from the log to the comment entry field,
+            # get the text from dataframe:
+            txt=self.log.loc[self.log.movie_name == self.curr_movie_name].comments.values[0]
+            self.comment_widget.delete(0, tk.END)  # delete any existing text
+            self.comment_widget.insert(0, txt)  # insert the text
+
     def set_vid(self, vid_idx):
         """ Load a new video with index vid_idx onto the GUI.
         This task includes displaying the first frame of the video in the panel, displaying its index
@@ -323,20 +344,18 @@ class MoviePlayer:
         self.ent_vid_idx.insert(0, self.curr_vid_idx)  # write the current index
         # Change current movie name:
         self.curr_movie_name = os.path.basename(self.file_paths[self.curr_vid_idx])
-        # If integrated with the FeedingLabeler GUI:
-        if self.label_var:
-            # Set the label variable to the label of the video in the log dataframe:
-            self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
-            # setting this label_var will also display the label in the labeler GUI
-
+        # If integrated with the FeedingLabeler GUI, get the label and comments from the log:
+        self.get_log_entries()
         # Display the frame and coordinates (in the original video) from which this video was cut:
-        txt=self.log.loc[self.log.movie_name == self.curr_movie_name,
-                         ['frame', 'coordinates']].to_string(index=False)  # retrieve the relevant data
+        txt = self.log.loc[self.log.movie_name == self.curr_movie_name,
+                          ['frame', 'coordinates']].to_string(index=False)  # retrieve the relevant data
         self.lbl_frame_centroid.configure(text=txt)  # display the text in the widget
         # And finally, open the video file:
         self.curr_vid = cv2.VideoCapture(self.file_paths[self.curr_vid_idx])
         self.display_frame()  # display the first frame in the video
         self.window.title(self.curr_movie_name)  # change the GUI title to the current video name
+        # Start playing the video automatically when a new video is set
+        self.play_vid(event=True)   # event is set to True so that the play button would be handled as if clicked
 
     def play_vid(self,event=None):
         """ This method plays the video file currently loaded to the GUI.
@@ -357,9 +376,10 @@ class MoviePlayer:
                 self.window.after(15, self.play_vid)
         except AttributeError:
             # If the video reached its end tkinter will raise an AttributeError, we'll catch it and reset the video:
-            self.curr_vid.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Rewind the video capture object to frame 0
+            self.curr_vid.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Rewind the video capture object to frame
             self.display_frame()  # display the first frame
             self.pause = not self.pause  # Change the status of the play/pause button from "Pause" to "Play"
+
 
     def next_vid(self,event=None):
         """Load the next video in the video list.
