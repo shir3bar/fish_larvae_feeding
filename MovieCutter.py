@@ -234,7 +234,7 @@ class MovieCutter(MovieProcessor):
         self.med_laplacian = []  # mean laplacian value for each video segment
         self.movie_length = movie_length + 1  # Set the length of movies
         # Initiate the log dataframe:
-        self.log = pd.DataFrame(columns=['movie_name','parent_video','frame', 'coordinates', 'label'])
+        self.log = pd.DataFrame(columns=['movie_name','parent_video','frame', 'coordinates','comments', 'label'])
         # And now the widgets and GUI integrations:
         self.progressbar = progressbar  # tkinter progress bar widget
         self.trainlabel = trainlabel  # tkinter label widget
@@ -296,7 +296,8 @@ class MovieCutter(MovieProcessor):
                                                     (self.padding * 2, self.padding * 2), False), movie_path]
         # Create a new log entry:
         self.log.loc[self.movie_counter, :] = {'movie_name': new_name, 'parent_video': self.vid_path,
-                                               'frame': self.counter, 'coordinates': centroid, 'label': None}
+                                               'frame': self.counter, 'coordinates': centroid,
+                                               'comments': '', 'label': None}
 
     def close_segment(self,laplacian,key):
         """Close a movie segment, release resources and check if it is too blurry."""
