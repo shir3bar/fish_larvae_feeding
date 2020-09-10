@@ -38,6 +38,7 @@ class CutterApp():
         self.movie_cutters = []  # Movie cutter objects will be stored here
         self.num_vids_selected=None
         self.define_layout()
+        self.window.wm_title("Fish Movie Cutter")
         # Set a closing procedure for the GUI window and start the mainloop:
         self.window.mainloop()
 
