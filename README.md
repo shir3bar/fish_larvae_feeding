@@ -62,7 +62,7 @@ The processing is done for the most part by using basic image processing with th
 A Graphic User Interface (GUI) developed with Python's tkinter. It enables users to choose video files, saving directory, and
 cut the file using the MovieCutter class, while monitoring the progress of the cutting process.
 This demo explains it best: <br>
-![MovieCutterGUI Demo](Demos/MovieCutterGUI Demo.gif)
+![MovieCutterGUI Demo](Demos/MovieCutterGUI_Demo.gif)
 <br>
 ### LabelerGUI.py <a name= 'LabelerGUI'></a>
 Another tkinter GUI, used to label the video segments created by the MovieCutter. <br> 
