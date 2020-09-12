@@ -7,7 +7,7 @@ An evidence-based agriculture project using computer vision and deep learning to
  * [Problem Description](#Problem)
  * [Phase A - Data Collection](#Phase)
     * [MovieCutterGUI.py](#MovieCutterGUI)
-    * [MovieCutter.py](#MovieCutter)
+        * [MovieCutter.py](#MovieCutter)
     * [LabelerGUI.py](#LabelerGUI)
  * [Usage](#Usage)
     * [Dependencies](#Dependencies)
@@ -45,7 +45,21 @@ In addition, feeding events are sparse - most of the videos will be filled with 
 one would eat, or try to. This combination of factors, make it hard for both a machine and a 
 human observer to analyse the videos and extract different behaviors from them. <br>
 For this reason, we decided to, first, create a dataset of labeled short video segments, 
-each centered around one individual fish (ideally).
+each centered around one individual fish (ideally).<br>
+In a nutshell, we want to go from this (only in video): <br>
+<div style="text-align:center">
+
+![Fullframe sample](Demos/Crowded_sample.png)
+
+</div>
+<br>
+To this: <br>
+<div style="text-align:center">
+
+![Single sample](Demos/Single_sample.png)
+</div>
+<br>
+<br>
 This will be phase A of the project. Phase B, once this dataset is ready, will be to use deep learning, and more specifically, weakly supervised learning, to build a tool for automated detection of feeding behavior. 
 
 
@@ -55,14 +69,18 @@ These tools use simple image processing to detect fish in a video and create sma
 
 ### MovieCutterGUI.py <a name= 'MovieCutterGUI'></a>
 A Graphic User Interface (GUI) developed with Python's tkinter. It enables users to choose video files, saving directory, and
-cut the file using the MovieCutter class, while monitoring the progress of the cutting process.
+cut the file using the MovieCutter class (details below), while monitoring the progress of the cutting process.
 This demo explains it best: <br>
 <br>
 <br>
+<div style="text-align:center">
+
 ![MovieCutterGUI Demo](Demos/MovieCutterGUI_Demo.gif)
+
+</div>
 <br>
 <br>
-### MovieCutter.py <a name= 'MovieCutter'></a>
+#### MovieCutter.py <a name= 'MovieCutter'></a>
 A script to process full length videos and cut them into short video segments of (ideally) a single fish.
 Outputs a folder of video segments and a corresponding log file.
 The processing is done for the most part by using basic image processing with the OpenCV package.
@@ -76,7 +94,11 @@ The GUI will save the video labels to the log file and delete unnecessary video 
 Please check out this demo for a detailed walk-through:<br>
 <br>
 <br>
+<div style="text-align:center">
+
 ![LabelerGUI Demo](Demos/LabelerGUI_Demo.gif)
+
+</div>
 <br>
 <br>
 
