@@ -12,7 +12,7 @@ An evidence-based agriculture project using computer vision and deep learning to
  * [Usage](#Usage)
     * [Dependencies](#Dependencies)
  * [Next Steps](#Next-Steps)
- [References](#References)
+ * [References](#References)
 
  
  ## Motivation
@@ -134,8 +134,10 @@ To activate the Labeling application.
 
 ## Next steps
 After creating a database, training a CNN image classifier to detect the fish activity.
+<br>
+<br>
 
-# References
+## References
 1. FAO. 2020. The State of World Fisheries and Aquaculture 2020. Sustainability in action. Rome. <a name="FAO">  </a> <br>
 <a href="https://doi.org/10.4060/ca9229en"> https://doi.org/10.4060/ca9229en </a>
 2. Parra G, Yufera M. 2000 Feeding, physiology and growth responses in first-feeding gilthead
