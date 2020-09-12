@@ -1,6 +1,6 @@
 # fish_larvae_feeding
 An evidence-based agriculture project using computer vision and deep learning to detect feeding behavior in videos of fish larvae grown in aquaculture (fish farms). 
- * [Motivation](#Motivation)
+ * <a href='#Motivation'> Motivation </a>
  * <a href='#Problem'> Problem Description </a>
  * <a href='#PhaseA'> Phase A - Data Collection </a>
  
@@ -60,8 +60,8 @@ The processing is done for the most part by using basic image processing with th
 ### MovieCutterGUI.py <a name= 'MovieCutterGUI'></a>
 A Graphic User Interface (GUI) developed with Python's tkinter. It enables users to choose video files, saving directory, and
 cut the file using the MovieCutter class, while monitoring the progress of the cutting process.
-This demo explains it best: <br>
-`![MovieCutterGUI Demo](Demos/MovieCutterGUI Demo.gif)`
+This demo explains it best: <br
+![MovieCutterGUI Demo](Demos/MovieCutterGUI Demo.gif)`
 <br>
 ### LabelerGUI.py <a name= 'LabelerGUI'></a>
 Another tkinter GUI, used to label the video segments created by the MovieCutter. <br> 
@@ -70,12 +70,12 @@ The user can then play them, navigate between videos and apply labels according 
 frame: There is a myriad of feeding behaviors and an option to mark videos for deletion. <br>
 The GUI will save the video labels to the log file and delete unnecessary video files. 
 Please check out this demo for a detailed walk-through:<br>
-`![MovieCutterGUI Demo](Demos/LabelerGUI_Demo.gif)`
+![MovieCutterGUI Demo](Demos/LabelerGUI_Demo.gif)
 <br>
 
 
 
-<H2 id='Usage'> Usage </H2> <a name= 'Usage'></a>
+## Usage <a name= 'Usage'></a>
 Clone this repository or download the scripts, please make sure you have all the dependencies before trying to run this.
 ### Dependencies: <a name= 'Dependencies'></a>
 The code was developed in python 3.8 and assumes the existence of the following libraries:
