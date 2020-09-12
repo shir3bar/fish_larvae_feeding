@@ -12,7 +12,7 @@ An evidence-based agriculture project using computer vision and deep learning to
  * [Usage](#Usage)
     * [Dependencies](#Dependencies)
  * [Next Steps](#Next-Steps)
- 
+ [References](#References)
 
  
  ## Motivation
@@ -22,12 +22,12 @@ Since the 1960's fish consumption has been increasing globally by approximately 
 However, due to overfishing of wild fish stocks, the fisheries sector (i.e catching fish out in the wild)
 has not been able to sustainably keep up with the demand.
 While the contribution of fisheries to the global fish production has plateaued, aquaculture's contribution sky-rocketed. 
-From only 9% of the global fish produce in the 1980's, to 52% of the fish in 2018. <a href=#FAO>¹</a>
+From only 9% of the global fish produce in the 1980's, to 52% of the fish in 2018.<a href=#FAO>¹</a>
 As struggles for sustainable fishing continues and the demand for fish protein increases, 
 this figure is projected to go even higher. <br>
 The problem is, growing fish is not very efficient. The first period in the fish larvae's life is characterized by
 high mortality rates - 90%-99% of larvae in the wild die. In aquaculture, in closely monitored environment, 
-this mortality rate is roughly 70%.<a href="#Parra"> ² </a> <a href="#Yufera"> ³ </a> 
+this mortality rate is roughly 70%.<a href="#Parra">²</a> <a href="#Yufera">³</a> 
 The expense of maintaining this environment, alongside the high mortality rate,
 makes this stage in the larvae's life the most costly in the fish production pipeline. <br>
 This means even incremental improvements may reduce cost and waste to farmers and increase production and profits. 
