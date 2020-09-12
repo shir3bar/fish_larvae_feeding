@@ -17,17 +17,18 @@ An evidence-based agriculture project using computer vision and deep learning to
  
  ## Motivation
 Fish is an important protein source. According to the FAO, fish provided more than 3.3 billion people with 20 percent
-of their average intake of animal proteins. <br>
-Since the 1960's fish consumption has been increasing globally by approximately 1.5% each year. 
+of their average intake of animal proteins.<a href=#FAO>¹</a><br> <br>
+Since the 1960's fish consumption has been increasing globally by approximately 1.5% each year.<a href=#FAO>¹</a> 
 However, due to overfishing of wild fish stocks, the fisheries sector (i.e catching fish out in the wild)
-has not been able to sustainably keep up with the demand. <br>
+has not been able to sustainably keep up with the demand.
 While the contribution of fisheries to the global fish production has plateaued, aquaculture's contribution sky-rocketed. 
-From only 9% of the global fish produce in the 1980's, to 52% of the fish in 2018. 
+From only 9% of the global fish produce in the 1980's, to 52% of the fish in 2018. <a href=#FAO>¹</a>
 As struggles for sustainable fishing continues and the demand for fish protein increases, 
 this figure is projected to go even higher. <br>
 The problem is, growing fish is not very efficient. The first period in the fish larvae's life is characterized by
 high mortality rates - 90%-99% of larvae in the wild die. In aquaculture, in closely monitored environment, 
-this mortality rate is roughly 70%. The expense of maintaining this environment, alongside the high mortality rate,
+this mortality rate is roughly 70%.<a href="#Parra"> ² </a> <a href="#Yufera"> ³ </a> 
+The expense of maintaining this environment, alongside the high mortality rate,
 makes this stage in the larvae's life the most costly in the fish production pipeline. <br>
 This means even incremental improvements may reduce cost and waste to farmers and increase production and profits. 
 Previous research has implicated the larvae's feeding mechanism as one of the main factors for this phenomena. 
@@ -133,5 +134,19 @@ To activate the Labeling application.
 
 ## Next steps
 After creating a database, training a CNN image classifier to detect the fish activity.
+
+# References
+1. FAO. 2020. The State of World Fisheries and Aquaculture 2020. Sustainability in action. Rome. <a name="FAO">  </a> <br>
+<a href="https://doi.org/10.4060/ca9229en"> https://doi.org/10.4060/ca9229en </a>
+2. Parra G, Yufera M. 2000 Feeding, physiology and growth responses in first-feeding gilthead
+seabream (Sparus aurata L.) larvae in relation to prey density. J. Exp. Mar. Bio. Ecol. 243,
+1–15. <br><a name="Parra">  </a>
+<a href="https://doi.org/10.1016/S0022-0981(99)00106-9"> https://doi.org/10.1016/S0022-0981(99)00106-9</a>
+
+3. Yufera M, Conceito LEC, Battaglene S, Fushimi H, Kotani T. 2011 Early Development and
+Metabolism. In Sparidae: Biology and Aquaculture of Gilthead Sea Bream and other
+Species, pp. 133–168. Oxford, UK: Wiley-Blackwell. <a name="Yufera"></a> <br>
+<a href="https://doi.org/10.1002/9781444392210.ch5"> https://doi.org/10.1002/9781444392210.ch5 </a>
+
 
 
