@@ -1,22 +1,19 @@
 # fish_larvae_feeding
 An evidence-based agriculture project using computer vision and deep learning to detect feeding behavior in videos
  of fish larvae grown in aquaculture (fish farms). 
- <p style="line-height:5px">
+
  
  * [Motivation](#Motivation)
- * [Problem Description](#Problem Description)
+ * [Problem Description](#Problem)
  * [Phase A - Data Collection](#Phase)
- 
     * [MovieCutter.py](#MovieCutter)
     * [MovieCutterGUI.py](#MovieCutterGUI)
     * [LabelerGUI.py](#LabelerGUI)
-    
  * [Usage](#Usage)
- 
     * [Dependencies](#Dependencies)
- * [Next Steps](#Next Steps)
+ * [Next Steps](#Next)
  
- </p>
+
  
  ## Motivation <a name= 'Motivation'></a>
 Fish is an important protein source. According to the FAO, fish provided more than 3.3 billion people with 20 percent
