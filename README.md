@@ -1,18 +1,22 @@
 # fish_larvae_feeding
-An evidence-based agriculture project using computer vision and deep learning to detect feeding behavior in videos of fish larvae grown in aquaculture (fish farms). 
- * <a href='#Motivation'> Motivation </a>
- * <a href='#Problem'> Problem Description </a>
- * <a href='#PhaseA'> Phase A - Data Collection </a>
+An evidence-based agriculture project using computer vision and deep learning to detect feeding behavior in videos
+ of fish larvae grown in aquaculture (fish farms). 
+ <p style="line-height:5px">
  
-    * <a href='#MovieCutter'> MovieCutter.py </a>
-    * <a href='#MovieCutterGUI'> MovieCutterGUI.py </a>
-    * <a href='#LabelerGUI'> LabelerGUI.py </a>
+ * [Motivation](#Motivation)
+ * [Problem Description](#Problem Description)
+ * [Phase A - Data Collection](#Phase A)
+ 
+    * [MovieCutter.py](#MovieCutter.py)
+    * [MovieCutterGUI.py](#MovieCutterGUI.py)
+    * [LabelerGUI.py](#LabelerGUI.py)
     
- * <a href='#Usage'> Usage </a>
+ * [Usage](#Usage)
  
-    * <a href='#Dependencies'> Dependencies </a>
- * <a href='#NextStep'> Next Steps </a>
+    * [Dependencies](#Dependencies)
+ * [Next Steps](#Next Steps)
  
+ </p>
  
  ## Motivation <a name= 'Motivation'></a>
 Fish is an important protein source. According to the FAO, fish provided more than 3.3 billion people with 20 percent
@@ -60,8 +64,8 @@ The processing is done for the most part by using basic image processing with th
 ### MovieCutterGUI.py <a name= 'MovieCutterGUI'></a>
 A Graphic User Interface (GUI) developed with Python's tkinter. It enables users to choose video files, saving directory, and
 cut the file using the MovieCutter class, while monitoring the progress of the cutting process.
-This demo explains it best: <br
-![MovieCutterGUI Demo](Demos/MovieCutterGUI Demo.gif)`
+This demo explains it best: <br>
+![MovieCutterGUI Demo](Demos/MovieCutterGUI Demo.gif)
 <br>
 ### LabelerGUI.py <a name= 'LabelerGUI'></a>
 Another tkinter GUI, used to label the video segments created by the MovieCutter. <br> 
