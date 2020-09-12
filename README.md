@@ -6,8 +6,8 @@ An evidence-based agriculture project using computer vision and deep learning to
  * [Motivation](#Motivation)
  * [Problem Description](#Problem)
  * [Phase A - Data Collection](#Phase)
-    * [MovieCutter.py](#MovieCutter)
     * [MovieCutterGUI.py](#MovieCutterGUI)
+    * [MovieCutter.py](#MovieCutter)
     * [LabelerGUI.py](#LabelerGUI)
  * [Usage](#Usage)
     * [Dependencies](#Dependencies)
@@ -53,16 +53,17 @@ This will be phase A of the project. Phase B, once this dataset is ready, will b
 I've developed a set of tools to help create a database with tagged samples of fish larvae activity.
 These tools use simple image processing to detect fish in a video and create smaller video segments with individual fish.
 
-### MovieCutter.py <a name= 'MovieCutter'></a>
-A script to process full length videos and cut them into short video segments of (ideally) a single fish.
-Outputs a folder of video segments and a corresponding log file.
-The processing is done for the most part by using basic image processing with the OpenCV package.
-
 ### MovieCutterGUI.py <a name= 'MovieCutterGUI'></a>
 A Graphic User Interface (GUI) developed with Python's tkinter. It enables users to choose video files, saving directory, and
 cut the file using the MovieCutter class, while monitoring the progress of the cutting process.
 This demo explains it best: <br>
 ![MovieCutterGUI Demo](Demos/MovieCutterGUI_Demo.gif)
+<br>
+<br>
+### MovieCutter.py <a name= 'MovieCutter'></a>
+A script to process full length videos and cut them into short video segments of (ideally) a single fish.
+Outputs a folder of video segments and a corresponding log file.
+The processing is done for the most part by using basic image processing with the OpenCV package.
 <br>
 ### LabelerGUI.py <a name= 'LabelerGUI'></a>
 Another tkinter GUI, used to label the video segments created by the MovieCutter. <br> 
