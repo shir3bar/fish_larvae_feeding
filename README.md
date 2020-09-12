@@ -17,7 +17,7 @@ An evidence-based agriculture project using computer vision and deep learning to
  
  ## Motivation
 Fish is an important protein source. According to the FAO, fish provided more than 3.3 billion people with 20 percent
-of their average intake of animal proteins.<a href=#FAO>¹</a><br> <br>
+of their average intake of animal proteins.<a href=#FAO>¹</a><br>
 Since the 1960's fish consumption has been increasing globally by approximately 1.5% each year.<a href=#FAO>¹</a> 
 However, due to overfishing of wild fish stocks, the fisheries sector (i.e catching fish out in the wild)
 has not been able to sustainably keep up with the demand.
