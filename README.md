@@ -5,11 +5,11 @@ An evidence-based agriculture project using computer vision and deep learning to
  
  * [Motivation](#Motivation)
  * [Problem Description](#Problem Description)
- * [Phase A - Data Collection](#Phase A)
+ * [Phase A - Data Collection](#Phase)
  
-    * [MovieCutter.py](#MovieCutter.py)
-    * [MovieCutterGUI.py](#MovieCutterGUI.py)
-    * [LabelerGUI.py](#LabelerGUI.py)
+    * [MovieCutter.py](#MovieCutter)
+    * [MovieCutterGUI.py](#MovieCutterGUI)
+    * [LabelerGUI.py](#LabelerGUI)
     
  * [Usage](#Usage)
  
