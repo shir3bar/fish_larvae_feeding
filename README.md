@@ -15,7 +15,7 @@ An evidence-based agriculture project using computer vision and deep learning to
  
 
  
- ## Motivation <a name= 'Motivation'></a>
+ ## Motivation
 Fish is an important protein source. According to the FAO, fish provided more than 3.3 billion people with 20 percent
 of their average intake of animal proteins. <br>
 Since the 1960's fish consumption has been increasing globally by approximately 1.5% each year. 
@@ -34,7 +34,7 @@ Previous research has implicated the larvae's feeding mechanism as one of the ma
 So, to better understand the mortality rates, and the effects of different environmental variable on the fish, 
 a system for monitoring larvae feeding behavior is necessary.
 
-## The Problem<a name= 'Problem'></a>
+## The Problem
 The object is to monitor fish larvae feeding behavior within commercial aquaculture pools. 
 To do this, a high-speed camera has been placed inside such pools and videos of varying lengths are captured. <br>
 Fish, unlike terrestrial creatures, live in a 3-Dimensional volume, rather then on a 2-Dimensional surface. 
@@ -46,46 +46,54 @@ one would eat, or try to. This combination of factors, make it hard for both a m
 human observer to analyse the videos and extract different behaviors from them. <br>
 For this reason, we decided to, first, create a dataset of labeled short video segments, 
 each centered around one individual fish (ideally).<br>
-In a nutshell, we want to go from this (only in video): <br>
+In a nutshell, we want to go from this: <br>
+
 <div style="text-align:center">
 
 ![Fullframe sample](Demos/Crowded_sample.png)
 
 </div>
+
 <br>
 To this: <br>
+
 <div style="text-align:center">
 
 ![Single sample](Demos/Single_sample.png)
 </div>
+
 <br>
+(only in video)
 <br>
 This will be phase A of the project. Phase B, once this dataset is ready, will be to use deep learning, and more specifically, weakly supervised learning, to build a tool for automated detection of feeding behavior. 
 
 
-## Phase A - Data Collection<a name= 'PhaseA'></a>
+## Phase A - Data Collection
 I've developed a set of tools to help create a database with tagged samples of fish larvae activity.
 These tools use simple image processing to detect fish in a video and create smaller video segments with individual fish.
 
-### MovieCutterGUI.py <a name= 'MovieCutterGUI'></a>
+### MovieCutterGUI.py
 A Graphic User Interface (GUI) developed with Python's tkinter. It enables users to choose video files, saving directory, and
 cut the file using the MovieCutter class (details below), while monitoring the progress of the cutting process.
 This demo explains it best: <br>
 <br>
 <br>
+
 <div style="text-align:center">
 
 ![MovieCutterGUI Demo](Demos/MovieCutterGUI_Demo.gif)
 
 </div>
+
 <br>
 <br>
-#### MovieCutter.py <a name= 'MovieCutter'></a>
+
+#### MovieCutter.py
 A script to process full length videos and cut them into short video segments of (ideally) a single fish.
 Outputs a folder of video segments and a corresponding log file.
 The processing is done for the most part by using basic image processing with the OpenCV package.
 <br>
-### LabelerGUI.py <a name= 'LabelerGUI'></a>
+### LabelerGUI.py
 Another tkinter GUI, used to label the video segments created by the MovieCutter. <br> 
 The user selects a directory of video segments; These are then loaded into the GUI; 
 The user can then play them, navigate between videos and apply labels according to the behavior of the fish in the 
@@ -94,18 +102,20 @@ The GUI will save the video labels to the log file and delete unnecessary video 
 Please check out this demo for a detailed walk-through:<br>
 <br>
 <br>
+
 <div style="text-align:center">
 
 ![LabelerGUI Demo](Demos/LabelerGUI_Demo.gif)
 
 </div>
+
 <br>
 <br>
 
 
-## Usage <a name= 'Usage'></a>
+## Usage
 Clone this repository or download the scripts, please make sure you have all the dependencies before trying to run this.
-### Dependencies: <a name= 'Dependencies'></a>
+### Dependencies:
 The code was developed in python 3.8 and assumes the existence of the following libraries:
 * OpenCV 
 * tkinter
@@ -121,7 +131,7 @@ To activate the Movie Cutter application. And: <br>
 `$ python LabelerGUI.py` <br>
 To activate the Labeling application. 
 
-## Next steps <a name= 'NextStep'></a>
+## Next steps
 After creating a database, training a CNN image classifier to detect the fish activity.
 
 
