@@ -57,6 +57,8 @@ These tools use simple image processing to detect fish in a video and create sma
 A Graphic User Interface (GUI) developed with Python's tkinter. It enables users to choose video files, saving directory, and
 cut the file using the MovieCutter class, while monitoring the progress of the cutting process.
 This demo explains it best: <br>
+<br>
+<br>
 ![MovieCutterGUI Demo](Demos/MovieCutterGUI_Demo.gif)
 <br>
 <br>
@@ -72,9 +74,11 @@ The user can then play them, navigate between videos and apply labels according 
 frame: There is a myriad of feeding behaviors and an option to mark videos for deletion. <br>
 The GUI will save the video labels to the log file and delete unnecessary video files. 
 Please check out this demo for a detailed walk-through:<br>
-![MovieCutterGUI Demo](Demos/LabelerGUI_Demo.gif)
 <br>
-
+<br>
+![LabelerGUI Demo](Demos/LabelerGUI_Demo.gif)
+<br>
+<br>
 
 
 ## Usage <a name= 'Usage'></a>
