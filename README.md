@@ -124,7 +124,7 @@ The code was developed in python 3.8 and assumes the existence of the following 
 * Numpy
 * imutils
 
-Using Terminal (Mac) or commandline (Windows), set the folder with the scripts as the current working 
+Using Terminal (Mac) or the command-line (Windows), set the folder with the scripts as the current working 
 directory and use: <br>
 `$ python MovieCutterGUI.py` <br>
 To activate the Movie Cutter application. And: <br>
