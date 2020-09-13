@@ -33,10 +33,8 @@ class FeedingLabeler:
         self.btn_save = tk.Button(master=self.window, text='Save Labels', command=self.save_labels)
         # Set the layout of the labeling window:
         self.set_layout()
-        # Define the movie player that will handle video display and navigation,
-        # we pass the label var and comment widget so that their values can be set when we load a new
-        # video to the GUI:
-        self.player = MoviePlayer(self.window, label_var=self.label, comment_widget=self.ent_comment)
+        # This will be our video player once we load some movies, see the get_dir method:
+        self.player = []
         self.log_saved = True  # Track changes to the label log
         self.window.wm_title("Fish Labeler")
         # define what happens when the GUI window is closed by user:
@@ -127,17 +125,27 @@ class FeedingLabeler:
         """ Save video labels to log file"""
         try:
             # Save changes to the log DataFrame to the log.csv file:
-            self.player.log.to_csv(self.player.log_filepath,index=False)
+            self.player.log.to_csv(self.player.log_filepath, index=False)
             # Open a prompt displaying the file path:
             messagebox.showinfo('Labels Saved', f'Log saved to: {self.player.log_filepath} ')
-            self.log_saved = True # Change the track saved changes marker to True
+            self.log_saved = True  # Change the track saved changes marker to True
         except:
             # If save fails alert user:
             messagebox.showinfo('Error', f'Error saving log file')
 
     def get_dir(self):
-        """ Get the desired directory from user and load videos to GUI for analysis.
+        """ Define a new MoviePlayer instance, get the desired directory from user and load videos to GUI for analysis.
         """
+        # If we already loaded some movies before, warn users to save their work:
+        if self.player:
+            result = messagebox.askquestion('Switch Player', "You are about to open a new Movie Player instance,"
+                                                             "this will delete any unsaved labels. Are you sure?")
+            if result != "yes":
+                return
+        # Define the movie player that will handle video display and navigation,
+        # we pass the label var and comment widget so that their values can be set when we load a new
+        # video to the GUI:
+        self.player = MoviePlayer(self.window, label_var=self.label, comment_widget=self.ent_comment)
         self.player.load_directory()  # See the Movie Player class for details
         self.bind_keystrokes()
 
@@ -228,7 +236,6 @@ class MoviePlayer:
         self.panel.grid(row=0, column=1, sticky='nsew')
         self.frm_vid_btns.grid(row=1, column=1)
 
-
     def handle_keystroke(self,event):
         """ Use specific keystrokes to navigate between videos.
         Meant to improve the workflow for the end user."""
@@ -240,6 +247,7 @@ class MoviePlayer:
                      "6": self.next_vid, '<,>': self.rewind_one_frame, '<.>': self.display_frame}
         if event.char in key_dict.keys():
             key_dict[event.char](event)
+
     def rewind_one_frame(self, event):
         """ Move one frame backwards in the current video"""
         # Get the current frame position:
@@ -275,7 +283,9 @@ class MoviePlayer:
         except:
             # In case of a mishap display a message to user:
             self.panel.create_text(250, 250, text='Video load failed')
-            raise
+            ans=input('Would you like to see the error? [y/n]')
+            if ans=='y':
+                raise
 
     def handle_play(self, event=None):
         """ Handle play button click, if it is clicked once turn it into a pause button."""
@@ -331,7 +341,12 @@ class MoviePlayer:
             self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
             # setting this label_var will also display the label in the labeler GUI
         if self.comment_widget:
-            # Write the comment data from the log to the comment entry field,
+            # Write the comment data from the log to the comment entry field
+            # check if field exists, if not create it:
+            if 'comments' not in self.log.columns:
+                self.log['comments'] = ['']*(self.num_vids+1)
+                self.log.to_csv(self.log_filepath, index=False)
+
             # get the text from dataframe:
             txt = self.log.loc[self.log.movie_name == self.curr_movie_name].comments.values[0]
             if pd.isnull(txt):
