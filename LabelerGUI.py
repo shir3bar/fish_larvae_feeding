@@ -275,7 +275,7 @@ class MoviePlayer:
         except:
             # In case of a mishap display a message to user:
             self.panel.create_text(250, 250, text='Video load failed')
-            
+            raise
 
     def handle_play(self, event=None):
         """ Handle play button click, if it is clicked once turn it into a pause button."""
