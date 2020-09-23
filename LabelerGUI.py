@@ -5,7 +5,7 @@ import cv2
 import PIL.Image, PIL.ImageTk
 import pandas as pd
 from tkinter import messagebox
-
+import numpy as np
 
 class FeedingLabeler:
     """ The Feeding Labeler is a GUI to help tag video samples for the Larvae Feeding project. It is meant to be used
@@ -257,6 +257,21 @@ class MoviePlayer:
             self.curr_vid.set(cv2.CAP_PROP_POS_FRAMES, curr_frame-2)
             self.display_frame()
 
+    def create_missing_log(self):
+        """ Create a new log file if no log file exists in the folder"""
+        # Create the dataframe for the log:
+        self.log = pd.DataFrame(columns=['movie_name', 'parent_video', 'frame', 'coordinates', 'comments', 'label'])
+        for i,vid in enumerate(self.file_paths):
+            # Iterate over the video files that were loaded and enter them as new rows in the dataframe:
+            movie_name = os.path.basename(vid) # Get video name
+            # As we don't have any of the data about the parent video, we'll leave it blank for the user to fill later:
+            self.log.loc[i, :] = {'movie_name': movie_name, 'parent_video': np.NaN,
+                                                   'frame': np.NaN, 'coordinates':np.NaN,
+                                                   'comments': '', 'label': None}
+        # Create a filepath for the log:
+        self.log_filepath = os.path.join(os.path.dirname(vid),'log.csv')
+        self.log.to_csv(self.log_filepath,index=False) # Save the csv
+
     def load_directory(self):
         """ Load all videos from user-selected directory to the GUI.
         Loads videos cut by the MovieCutterGUI and the corresponding log file."""
@@ -273,6 +288,9 @@ class MoviePlayer:
                     # if it's the log.csv file load it to a pandas data frame:
                     self.log_filepath = os.path.join(root, filename)   # save path
                     self.log = pd.read_csv(self.log_filepath)  # load log
+        if self.log.empty:
+            # Create a new log file if one doesn't exist:
+            self.create_missing_log()
         self.num_vids = len(self.file_paths)-1  # Get the total number of videos loaded
         self.lbl_numvids.configure(text='/ '+str(self.num_vids))  # display that number in the designated label
         self.lbl_numvids.update()  # update the gui label
