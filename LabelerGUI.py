@@ -20,7 +20,7 @@ class FeedingLabeler:
      For more infomation about the Movie Player functionality, please see the Movie Player class DocString."""
     # Class variables to define which key strokes will control the labeling:
     KEYS_TO_LABELS = {'2': 'Feeding I&O', '3': 'Spitting', '5': 'Feeding Success',
-                      '7': 'Delete Video', '8': 'Other', '9': 'Feeding Fail'}
+                      '7': 'Delete Video', '8': 'Other', '9': 'Feeding Fail', '-': 'Swimming'}
 
     def __init__(self):
         """ Initialize a new instance of the FeedingLabeler application."""
@@ -51,7 +51,7 @@ class FeedingLabeler:
         # Label options depicted as radio buttons, because of the multitude of labels,
         # we will create a list containing all the radio buttons, defining them iteratively:
         self.btn_labels = []
-        label_list = ['Delete Video','Feeding Success','Feeding Fail','Feeding I&O','Spitting','Other']
+        label_list = ['Delete Video','Swimming','Feeding Success','Feeding Fail','Feeding I&O','Spitting','Other']
         for label_name in label_list:
             self.btn_labels.append(tk.Radiobutton(master=self.frm_label, text=label_name, variable=self.label,
                                                   value=label_name, command=self.set_label))
@@ -63,7 +63,7 @@ class FeedingLabeler:
             # Other is when the main part of the frame doesn't contain a fish or the fish is blurry and out-of-focus
             self.lbl_comment = tk.Label(master=self.frm_label, text='Comments:')
         self.ent_comment = tk.Entry(master=self.frm_label)
-        self.ent_comment.bind("<Return>",self.insert_comment)
+        self.ent_comment.bind("<Return>", self.insert_comment)
 
     def set_layout(self):
         """ Layout all the GUI widgets"""
@@ -76,7 +76,7 @@ class FeedingLabeler:
         # Iterate over the label radio buttons to place them:
         for i in range(len(self.btn_labels)):
             self.btn_labels[i].grid(row=i+2, column=0, sticky='w',padx=5,pady=10)
-        new_row_num=i+4
+        new_row_num = i+4
         # Place the comments field:
         self.lbl_comment.grid(row=new_row_num, column=0, sticky='w', padx=5, pady=10)
         self.ent_comment.grid(row=new_row_num+1, column=0, sticky='w', padx=5, pady=10)
@@ -89,23 +89,24 @@ class FeedingLabeler:
     def on_close(self):
         """ Define the behavior of the GUI upon window close."""
         # If a video file is currently open, release it:
-        if self.player.curr_vid:
-            self.player.curr_vid.release()
-            if not self.log_saved:
-                # If the log has been change without saving, open a window prompt:
-                result = messagebox.askquestion('Save log','Do you want to save changes?')
-                if result == 'yes':
-                    # Save labels if requested to by the user:
-                    self.save_labels()
-            # Delete videos tagged as 'Other':
-            self.delete_videos()
-            # Check for missing video labels and prompt user:
-            if self.player.log.label.isna().any():
-                result = messagebox.askokcancel('Missing Labels',
-                                       'Some videos are missing labels, are you sure you want to leave?')
-                if not result: # If the user is sure, close the window:
-                    return  # Don't close the window
-
+        if self.player:
+            if self.player.curr_vid:
+                self.player.curr_vid.release()
+                if not self.log_saved:
+                    # If the log has been change without saving, open a window prompt:
+                    result = messagebox.askquestion('Save log','Do you want to save changes?')
+                    if result == 'yes':
+                        # Save labels if requested to by the user:
+                        self.save_labels()
+                # Delete videos tagged as 'Other':
+                self.delete_videos()
+                # Check for missing video labels and prompt user:
+                if self.player.log.label.isna().any():
+                    result = messagebox.askokcancel('Missing Labels',
+                                                    'Some videos are missing labels, are you sure you want to leave?')
+                    if not result: # If the user is sure, close the window:
+                        return  # Don't close the window
+                self.move_swimming_vids() # move the swim videos to a new folder
         self.window.quit()
 
     def delete_videos(self):
@@ -120,6 +121,36 @@ class FeedingLabeler:
                     os.remove(os.path.join(self.player.directory, row['movie_name']))  # Remove file
                     self.player.log.drop(index, inplace=True)  # Remove log entry
             self.save_labels()  # Save the log
+
+    def move_swimming_vids(self):
+        """ Move the swimming videos into a separate folder, split the log file entries to a new log."""
+        # Create a new directory to move the videos to:
+
+        swim_directory = os.path.join(self.player.directory,'Swimming_vids')
+        swim_log_filepath = os.path.join(swim_directory, 'swim_log.csv')
+
+        try:
+            os.mkdir(swim_directory)
+            # Create the new log dataframe:
+            swim_log = pd.DataFrame(columns=['movie_name', 'parent_video',
+                                             'frame', 'coordinates', 'comments', 'label'])
+            counter = 0
+        except FileExistsError:
+            print('Folder exists')
+            swim_log = pd.read_csv(swim_log_filepath)
+            counter=swim_log.shape[0]
+        # Iterate over all the videos:
+
+        for index, row in self.player.log.iterrows():
+            if row['label'] == 'Swimming':
+                # If it is a swimming video, rename to the vile to move it to a new directory:
+                os.rename(os.path.join(self.player.directory, row['movie_name']),
+                          os.path.join(swim_directory, row['movie_name']))
+                swim_log.loc[counter, :] = row  # Add the row to the swim log
+                self.player.log.drop(index, inplace=True)  # Remove log entry from the main log
+                counter += 1
+        swim_log.to_csv(swim_log_filepath, index=False)  # save the swim log
+        self.save_labels()  # Save the main log
 
     def save_labels(self):
         """ Save video labels to log file"""
@@ -219,6 +250,10 @@ class MoviePlayer:
         # Play button:
         self.btn_play = tk.Button(master=self.frm_vid_btns, text='Play/Pause', command=self.play_vid)
         self.btn_play.bind('<Button-1>', self.handle_play)  # Set the play/pause marker
+        # Fast forward buttons:
+        self.ff_pause = True
+        self.btn_fast_forward = tk.Button(master=self.frm_vid_btns, text='Fast Forward',
+                                          command=lambda: self.play_vid(play_speed=5))
         # Snapshot button:
         self.btn_snapshot = tk.Button(master=self.frm_vid_btns, text='Snapshot', command=self.get_snapshot)
         # Show the frame and the coordinates the video was cut from in the original video:
@@ -231,7 +266,8 @@ class MoviePlayer:
         self.btn_back.grid(row=0, column=2, sticky="e", padx=10)
         self.btn_play.grid(row=0, column=3, sticky="e", padx=10)
         self.btn_next.grid(row=0, column=4, sticky="e", padx=10)
-        self.btn_snapshot.grid(row=0, column=5, sticky="e", padx=10)
+        self.btn_fast_forward.grid(row=0,column=5,sticky="e",padx=10)
+        self.btn_snapshot.grid(row=0, column=6, sticky="e", padx=10)
         self.lbl_frame_centroid.grid(row=0, column=6, sticky="e", padx=10)
         self.panel.grid(row=0, column=1, sticky='nsew')
         self.frm_vid_btns.grid(row=1, column=1)
@@ -244,8 +280,9 @@ class MoviePlayer:
             return
         # Define pairs of keystrokes and actions in a dictionary:
         key_dict = { "0": self.play_vid, '1': self.get_snapshot, "4": self.prev_vid,
-                     "6": self.next_vid, '<,>': self.rewind_one_frame, '<.>': self.display_frame}
+                     "6": self.next_vid, ',': self.rewind_one_frame, '.': self.display_frame}
         if event.char in key_dict.keys():
+
             key_dict[event.char](event)
 
     def rewind_one_frame(self, event):
@@ -266,17 +303,19 @@ class MoviePlayer:
             movie_name = os.path.basename(vid) # Get video name
             # As we don't have any of the data about the parent video, we'll leave it blank for the user to fill later:
             self.log.loc[i, :] = {'movie_name': movie_name, 'parent_video': np.NaN,
-                                                   'frame': np.NaN, 'coordinates':np.NaN,
-                                                   'comments': '', 'label': None}
+                                  'frame': np.NaN, 'coordinates':np.NaN,
+                                  'comments': '', 'label': None}
         # Create a filepath for the log:
         self.log_filepath = os.path.join(os.path.dirname(vid),'log.csv')
-        self.log.to_csv(self.log_filepath,index=False) # Save the csv
+        self.log.to_csv(self.log_filepath,index=False)  # Save the csv
 
     def load_directory(self):
         """ Load all videos from user-selected directory to the GUI.
         Loads videos cut by the MovieCutterGUI and the corresponding log file."""
         self.directory=askdirectory() # get directory
         for root, directories, files in os.walk(self.directory):
+            # Do not read from the swimming video directory, meaning videos already tagged as swimming will not load:
+            directories[:] = [d for d in directories if d not in ['Swimming_vids']]
             # Iterate ove all files in the directory:
             for filename in files:
                 # Join the two strings in order to form the full filepath.
@@ -341,7 +380,7 @@ class MoviePlayer:
         filename = self.curr_movie_name.split('.')[0] + '_snap' + str(self.snap_idx) + '.jpg'
         filepath = folderpath + os.path.sep + filename
         cv2.imwrite(filepath, self.frame)  # save snapshot to file
-        self.snap_idx += 1 # update snap index
+        self.snap_idx += 1  # update snap index
         # display a prompt informing the user where the file was saved:
         messagebox.showinfo('Save Snapshot', f'Snapshot saved at {filepath}')
 
@@ -399,11 +438,11 @@ class MoviePlayer:
         self.handle_play()
         self.play_vid()   # event is set to True so that the play button would be handled as if clicked
 
-    def play_vid(self,event=None):
+    def play_vid(self,event=None,play_speed=15):
         """ This method plays the video file currently loaded to the GUI.
         The video is played by recursively calling this method using the window.after() tkinter method.
         The method will stop when the video is paused or reaches its end.
-        This method is invoked either by pressing the play button, or by pressing the space bar.
+        This method is invoked either by pressing the play button, or by pressing the 0 key.
 
         """
         if event:
@@ -416,13 +455,12 @@ class MoviePlayer:
                 # pause hasn't been pressed
                 self.display_frame()  # display a single frame
                 # The main driving force behind the method, recursively calling the method again after 15 milliseconds:
-                self.window.after(15, self.play_vid)
+                self.window.after(play_speed, self.play_vid)
         except AttributeError:
             # If the video reached its end tkinter will raise an AttributeError, we'll catch it and reset the video:
             self.curr_vid.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Rewind the video capture object to frame
             self.display_frame()  # display the first frame
             self.pause = not self.pause  # Change the status of the play/pause button from "Pause" to "Play"
-
 
     def next_vid(self,event=None):
         """Load the next video in the video list.
@@ -447,7 +485,7 @@ class MoviePlayer:
             if isinstance(event.widget, tk.Entry):
                 return
         self.curr_vid.release()  # Release the current video capture object
-        new_idx=self.curr_vid_idx - 1
+        new_idx = self.curr_vid_idx - 1
         if new_idx < 0:
             # if the new index is out of range, set it to the first video index:
             new_idx = 0
