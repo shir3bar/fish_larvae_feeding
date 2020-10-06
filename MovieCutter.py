@@ -8,31 +8,46 @@ from datetime import datetime
 
 class MovieProcessor:
     """Process videos to detect fish larvae using classic image processing with OpenCV."""
-    def __init__(self,vid_path, save_dir, brighten=True, blur=False,
-                 min_width=70, min_height=70, num_train_frame=500, fps=30):
+    def __init__(self,vid_path, save_dir, brighten=50, blur=(0,0), min_width=70, min_height=70,
+                 apply_brightness=False, num_train_frame=500, fps=30, start_frame=0, frame_limit=1000):
         """Initiate a processor object. inputs:
         vid_path - location of the video to process
         save_dir - location to save the processed video
         brighten - optional, brighten the image as part of the processing flow
-        blur - optional, blur the image as part of the processing flow
+                the default value is set to brighten to 50 so as to mildly brighten the image
+        blur - optional, kernel size for blurring the image as part of the processing flow
+            the default value is set to (0,0) so that no blurring occurs
         min_width - minimum width of a single blob, helps filter small non-fish objects
         min_height - minimum height of a single blob, helps filter small non-fish objects
+        apply_brightness - save the processed videos with the brightened frames
         num_train_frame - number of frames used to train the background subtractor
-        fps - define the rate of frames per second for the processed video output"""
+        fps - define the rate of frames per second for the processed video output
+        start_frame  - set the frame from which to start the processing of the video
+        frame_limit - set how many frames will be used for the processing preview in process_vid method"""
         self.vid_path = vid_path
         self.folder_path = save_dir
         self.min_width = min_width  # minimal blob width
         self.min_height = min_height  # minimal blob height
         self.brighten = brighten
-        self.blur = blur
-        self.num_train_frames = num_train_frame
+        if blur[0] != 0:
+            self.blur = tuple([num if num%2 == 1 else num+1 for num in list(blur)])  # The default kernel size is set to no blur
+        else:
+            self.blur = blur
         self.fps = fps
         # Create a video capture object:
         self.cap = cv2.VideoCapture(vid_path)
+        # set the number of training frames to use for training the background subtractor:
+        self.num_train_frames = num_train_frame
+        # Get the number of frames in the original video:
+        self.num_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        # if the number of frames in the video is smaller than the number of training frames
+        # for the background subtractor, reduce the amount of training frames:
+        if self.num_train_frames > self.num_frames:
+            self.num_train_frames = round(self.num_frames / 4)
         # Get the frame dimensions:
         self.SHAPE = [int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))]
         # Create background subtractor object:
-        self.bg_sub = cv2.createBackgroundSubtractorMOG2(history=num_train_frame, detectShadows=True)
+        self.bg_sub = cv2.createBackgroundSubtractorMOG2(history=self.num_train_frames, detectShadows=True)
         # Name the output video:
         self.output_vid = vid_path[0:-4]+'_proccesed.avi'
         # The bbox_dict will house the coordinates and dimensions of the bounding boxes around the detected objects,
@@ -40,8 +55,10 @@ class MovieProcessor:
         self.bbox_dict = {}
         self.frame = None # video frame, initialize at nobe
         # codec for video writing, see https://www.pyimagesearch.com/2016/02/22/writing-to-video-with-opencv/:
-        self.fourcc = cv2.VideoWriter_fourcc(*"MJPG")#cv2.VideoWriter_fourcc(*'RGBA')  #cv2.VideoWriter_fourcc(*"MJPG")  # cv2.VideoWriter_fourcc( '3', 'I', 'V', 'D')
-
+        self.fourcc = cv2.VideoWriter_fourcc(*"MJPG")#cv2.VideoWriter_fourcc(*'RGBA')
+        self.start_frame = start_frame  # set the frame of the video where processing will start
+        self.frame_limit = frame_limit
+        self.apply_brightness = apply_brightness # Apply the brightness adjustment to the saved video
 
     @staticmethod
     def get_centroid(x, y, w, h):
@@ -50,6 +67,9 @@ class MovieProcessor:
         cy = y + int(h / 2)
         return cx, cy
 
+    def set_start_frame(self):
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.start_frame)  # Set the start frame to the one selected by the user
+
     def get_contours(self):
         """ Get the blobs/contours/fish detected in the image.
         Each blob gets an entry in the bbox_dict - the key is the bounding box coordinates and dimensions,
@@ -57,7 +77,7 @@ class MovieProcessor:
         """
 
         # find all contours/blobs in the frame:
-        self.bbox_dict={}
+        self.bbox_dict = {}
         contours, hierarchy = cv2.findContours(self.combined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_L1)
         for (i, contour) in enumerate(contours):
             # for each detected object/blob/contour
@@ -81,7 +101,13 @@ class MovieProcessor:
         BOUNDING_BOX_COLOUR = (255, 10, 0)  # BGR instead of RGB
         CENTROID_COLOUR = (255, 192, 0)  # BGR instead of RGB
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)   # convert the image to grayscale
-        self.processed_frame = self.frame  # begin depicting the processing by using the base frame
+        # begin depicting the processing by using the base frame, brighten it if the apply brightness is set to True
+        # else use the original video frame:
+        if self.apply_brightness:
+            self.processed_frame = cv2.convertScaleAbs(self.frame, alpha=1, beta=self.brighten)
+        else:
+            self.processed_frame = self.frame
+
         for bbox, centroid in self.bbox_dict.items():
             # for each blob detected
             x, y, w, h = bbox
@@ -95,10 +121,10 @@ class MovieProcessor:
             # Write the laplacian value next to the detected object:
             cv2.putText(self.processed_frame, f'{lap:.2f}', (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
 
-
-
     def get_filter(self):
-        """ Get the foreground mask for a frame
+        """ Get the foreground mask for a frame,
+        use an approach combining OpenCV background subtraction and Canny edge detection
+        to avoid detecting floating particles in the water.
         input:
         frame - frame from video
         bg_sub - an open-cv pre-trained background subtractor
@@ -109,25 +135,27 @@ class MovieProcessor:
         """
         if self.frame is None:
             _, self.frame = self.cap.read()
+        # First process the new frame:
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # Turn to grayscale
-        denoise = cv2.GaussianBlur(gray, (71, 71), 0)
-        if self.blur:
-            # Apply gaussian blur to image
-            gray = denoise
-        if self.brighten:
-            # Apply brightness adjustment to image
-            gray = cv2.convertScaleAbs(gray, alpha=1, beta=50)
-        self.fg_mask = self.bg_sub.apply(gray, None, 0.001)  # calculate foreground mask
-        img = cv2.Canny(denoise, 10, 10)  # get edges from the blurred image to filter out small floating particles
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
+        # Apply gaussian blur to image using the kernel size defined by user:
+        if self.blur[0] != 0:
+            gray = cv2.GaussianBlur(gray, self.blur, 0)
+        # Apply brightness adjustment to image, if brighten=0 image will remain unchanged:
+        gray = cv2.convertScaleAbs(gray, alpha=1, beta=self.brighten)
+        # Calculate the foreground mask using the trained background subtractor:
+        self.fg_mask = self.bg_sub.apply(gray, None, 0.001)
+        # Now for the edge detection:
+        # Blur out the small particle floating in the water:
+        denoise_background = cv2.GaussianBlur(gray, (71, 71), 0)
+        # get edges from the blurred image to filter out small floating particles:
+        img = cv2.Canny(denoise_background, 10, 10)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))  # Define the kernel for closing gaps
         closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)  # fill in gaps in the edges
         opening = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel)
         # Dilate to merge adjacent blobs
         dilation = cv2.dilate(opening, kernel, iterations=2)
         # get the areas that are detected by both the bg-sub and the edge detection routine:
         self.combined = cv2.bitwise_and(self.fg_mask, closing)
-
-
 
     def train_bg_subtractor(self):
         """ Pre-train the background subtractor.
@@ -145,28 +173,25 @@ class MovieProcessor:
             # ret,frame=cap.read() # get one frame
             _, self.frame = self.cap.read()
             gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # convert to grayscale
-            if self.brighten:
-                # modify brightness if applicable:
-                gray = cv2.convertScaleAbs(gray, alpha=1, beta=50)
-            if self.blur:
-                # apply gaussian blur if applicable:
-                gray = cv2.GaussianBlur(gray, (71, 71), 0)
+            # apply gaussian blur, default kernel size is set to 0 so that no blurring occurs
+            if self.blur[0] != 0:
+                gray = cv2.GaussianBlur(gray, self.blur, 0)
+            # apply brightening if applicable
+            gray = cv2.convertScaleAbs(gray, alpha=1, beta=self.brighten)
             self.fg_mask = self.bg_sub.apply(gray, None, 0.001)  # apply bg_sub to the frame (modified or not)
 
     def process_vid(self):
         """ Detect objects in a single video and create a new video with the bounding boxes around objects.
+        This function is set up as a generator and yields one frame at a time.
         input:
         vid_name - path and filename of the input video
         output_vid - path and filename for the generated video
         brighten - bool, whether to adjust brightness in the image
         blur - bool, whether to apply gaussian blur to remove background noise from the image
         """
-        self.vid_writer = cv2.VideoWriter(self.output_vid, self.fourcc, 30,
-                                          (self.SHAPE[0], self.SHAPE[1]), True)
-        self.train_bg_subtractor()  # pre-training
         # iterate over the remaining frames:
-        counter=0
-        while True:
+        counter = 0
+        while counter <= self.frame_limit:
             grabbed, self.frame = self.cap.read()  # get frame
             if not grabbed:
                 # If the video is finished, stop the loop
@@ -175,12 +200,26 @@ class MovieProcessor:
             self.get_filter()  # get foreground mask
             self.get_contours()  # find objects inside the mask, get a list of their bounding boxes
             self.draw_boxes()  # draw bounding boxes on original frame
-            self.processed_frame = cv2.cvtColor(self.processed_frame, cv2.COLOR_BGR2RGB)  # optional: open-cv work in BGR so convert back to RGB
-            self.vid_writer.write(self.processed_frame)  # Write frame to the new video file
-            # fps.update()
-        # release resources:
-        self.vid_writer.release()
-        self.cap.release()
+            #self.processed_frame = cv2.cvtColor(self.processed_frame, cv2.COLOR_BGR2RGB)  # optional: open-cv work in BGR so convert back to RGB
+            yield self.processed_frame
+        # When done rewind to the start frame:
+        self.set_start_frame()
+
+    def save_vid(self):
+        vid_writer = cv2.VideoWriter(self.output_vid, self.fourcc, 30,
+                                     (self.SHAPE[0], self.SHAPE[1]), True)
+        frame_gen = self.process_vid()
+        try:
+            while True:
+                vid_writer.write(next(frame_gen))  # Write frame to the new video file
+        except StopIteration:
+            # release resources:
+            self.vid_writer.release()
+
+    def reset_bg_subtractor(self):
+        """ Reset the background subtractor"""
+        self.bg_sub = cv2.createBackgroundSubtractorMOG2(history=self.num_train_frames, detectShadows=True)
+
 
 
 class MovieCutter(MovieProcessor):
@@ -199,8 +238,8 @@ class MovieCutter(MovieProcessor):
     END_MSG = 'Done!'
     MOVIE_PREFIX = 'cutout_'  # movie file name prefix
 
-    def __init__(self, vid_path, save_dir, padding=250, fps=30, movie_format='.avi',
-                 movie_length=100,progressbar=[], trainlabel=[]):
+    def __init__(self, vid_path, save_dir, padding=250, fps=30, start_frame=0,  movie_format='.avi',
+                 movie_length=100,  progressbar=[], trainlabel=[]):
         """ Initiate a MovieCutter instance to chop fish larvae movies into segments.
         inputs:
         vid_path - path of the video file to cut
@@ -212,7 +251,7 @@ class MovieCutter(MovieProcessor):
         trainlabel - a tk label widget, optional integration, to show updates on the MovieCutterGUI
         movie - an index of current video if several videos were selected in the GUI."""
         # Invoke the parent (movie processor) initialization:
-        super().__init__(vid_path,save_dir)
+        super().__init__(vid_path, save_dir, start_frame=start_frame, fps=fps)
         self.padding = padding   # Save the padding, the video frame size would be padding*2 X padding*2
         self.fps = fps
         # Get parent video name:
@@ -239,7 +278,12 @@ class MovieCutter(MovieProcessor):
         self.progressbar = progressbar  # tkinter progress bar widget
         self.trainlabel = trainlabel  # tkinter label widget
         self.videos_released = False   # monitors whether video resources were closed properly
+          # will apply the change in brightness to the saved video segments
 
+    def __repr__(self):
+         return f'Brighten {self.brighten}; Blur {self.blur}; Minimum Width {self.min_width};' \
+             f' Minimum Height {self.min_height}; Clip Length {self.movie_length-1}; Start Frame {self.start_frame};' \
+             f' Apply Brightness {self.apply_brightness}'
 
     def get_bounds(self, centroid):
         """ Get the bounds of a new video segment. This is makes sure all video
@@ -307,7 +351,7 @@ class MovieCutter(MovieProcessor):
         tmp[0].release()  # Release it
         # Filter out blurry videos:
         if self.med_laplacian[-1] < np.mean(self.med_laplacian) - 1.5:
-            #if the mean laplacian is 1.5 point below the mean of all videos, remove it.
+            # if the mean laplacian is 1.5 point below the mean of all videos, remove it.
             # This is an experimental value that needs testing.
             # Remove the video file:
             os.remove(tmp[1])
@@ -332,7 +376,9 @@ class MovieCutter(MovieProcessor):
             subframe = gray[y:(y + h), x:(x + w)]
             lap = cv2.Laplacian(subframe, cv2.CV_64F).var()
             # Cutout the video segment subframe:
-            cutout = gray[ entry[1][0]:entry[1][1],entry[0][0]:entry[0][1]]
+            cutout = gray[entry[1][0]:entry[1][1],entry[0][0]:entry[0][1]]
+            if self.apply_brightness:
+                cutout = cv2.convertScaleAbs(cutout, alpha=1, beta=self.brighten)
             # Add the laplacian calculation to the dictionary entry
             entry[3].append(lap)
             # Deal with cases where the centroid is too close to the edges of the original frame,
@@ -362,12 +408,6 @@ class MovieCutter(MovieProcessor):
         """ Does the logistics before starting to cut the videos, create directory for segments, train background
         subtractor, update GUI if applicable."""
         self.create_saving_dir()  # set up new directory
-        # Get the number of frames in the original video:
-        self.num_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
-        # if the number of frames in the video is smaller than the number of training frames
-        # for the background subtractor, reduce the amount of training frames:
-        if self.num_train_frames > self.num_frames:
-            self.num_train_frames = round(self.num_frames / 4)
         # If there is GUI integration, update the progress bar:
         if self.progressbar:
             # set the maximal value for the progress bar:
@@ -422,8 +462,11 @@ class MovieCutter(MovieProcessor):
         """ Release resources, save log and display end message."""
         self.release_videos()
         self.fps_timer.stop()  # Stop the fps_timer
-        self.log.to_csv(self.folder_name + os.path.sep + 'log.csv', index=False)  # Save the log dataframe to file
-        self.update_gui_lbl(self.END_MSG) # Inform the user cutting is done
+        self.log.to_csv(os.path.join(self.folder_name,'log.csv'), index=False)  # Save the log dataframe to file
+        f=open(os.path.join(self.folder_name,'cutter_profile.txt'),'w')
+        f.write(self.__repr__())
+        f.close()
+        self.update_gui_lbl(self.END_MSG)  # Inform the user cutting is done
         # Print the timing results:
         print("[INFO] elasped time: {:.2f}".format(self.fps_timer.elapsed()))
         print("[INFO] approx. FPS: {:.2f}".format(self.fps_timer.fps()))

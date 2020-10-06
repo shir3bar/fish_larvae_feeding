@@ -4,6 +4,7 @@ from tkinter.filedialog import askopenfilenames, askdirectory
 from tkinter.ttk import Progressbar
 from tkinter import messagebox
 import os
+from AdvanceMovieCutterGUI import AdvanceMovieCutterGUI
 
 class CutterApp():
     """ An application for cutting videos of fish larvae into smaller (in frame size) and shorter (frame length)
@@ -25,6 +26,7 @@ class CutterApp():
         self.btn_open = tk.Button(self.frm_btn, text="Open", command=self.open_vid)
         # Button to get the directory for saving the files (another subdirectory will be created in this directory):
         self.btn_save = tk.Button(self.frm_btn,text='Save to', command=self.save_dir)
+        self.btn_advance= tk.Button(self.frm_btn,text='Advance Options', command=self.open_advance)
         # Button to start the video cutting proccess
         self.btn_start = tk.Button(self.frm_btn, text="Start Cutting", command=self.cut_movies)
         # This label shows some info to direct user actions:
@@ -47,7 +49,8 @@ class CutterApp():
         self.window.rowconfigure([0,1],weight=1,minsize=100)
         self.btn_open.grid(row=0,column=0, sticky="ew",padx=5,pady=2)
         self.btn_save.grid(row=0,column=1,sticky="ew",padx=5,pady=2)
-        self.btn_start.grid(row=0,column=2,sticky="ew",padx=5,pady=2)
+        self.btn_advance.grid(row=0, column=2, sticky="ew", padx=5, pady=2)
+        self.btn_start.grid(row=0,column=3, sticky="ew",padx=5,pady=2)
         self.frm_btn.grid(row=0)
         self.lbl_movie_counter.grid(row=2,column=0,sticky="nsew")
         self.lbl_training.grid(row=1,column=0,sticky="nsew")
@@ -101,8 +104,16 @@ class CutterApp():
             self.lbl_training.configure(text=self.CUT_MSG)
             self.lbl_training.update()
 
+    def open_advance(self):
+        if self.movie_cutters:
+            AdvanceMovieCutterGUI(self.movie_cutters)
+        else:
+            messagebox.showinfo(title="Oops!", message="You need to choose a saving directory first")
+
     def cut_movies(self):
         """Start the movie cutting operation."""
+        for i in self.movie_cutters:
+            print(i)
         if self.movie_cutters:
             for i in range(self.num_vids_selected):
                 # Keep track of which movie we're cutting
