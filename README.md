@@ -133,7 +133,7 @@ To activate the Movie Cutter application. And: <br>
 To activate the Labeling application. 
 
 ## Next steps
-After creating a database, training a CNN image classifier to detect the fish activity.
+After creating a database, deep learning :)
 <br>
 <br>
 
