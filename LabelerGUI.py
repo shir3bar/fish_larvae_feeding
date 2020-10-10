@@ -98,29 +98,37 @@ class FeedingLabeler:
                     if result == 'yes':
                         # Save labels if requested to by the user:
                         self.save_labels()
-                # Delete videos tagged as 'Other':
-                self.delete_videos()
+                # Delete videos tagged for deletion and move the swim videos to a new folder:
+                result = messagebox.askquestion('Delete Videos',
+                                                'Do you want to delete videos and move the "Swim videos"?')
+                if result == 'yes':
+                    self.delete_videos()
+                    self.move_swimming_vids()
+                    self.save_labels()
+
                 # Check for missing video labels and prompt user:
                 if self.player.log.label.isna().any():
                     result = messagebox.askokcancel('Missing Labels',
                                                     'Some videos are missing labels, are you sure you want to leave?')
                     if not result: # If the user is sure, close the window:
                         return  # Don't close the window
-                self.move_swimming_vids() # move the swim videos to a new folder
         self.window.quit()
 
     def delete_videos(self):
         """ Upon closing, delete videos tagged as "Other" to free up space in the computer.
         Ask user before deleting!"""
-        # Pop up a question dialog:
-        result = messagebox.askquestion('Delete Videos', 'Do you want to delete the "Delete Video"s?')
-        if result == 'yes':
-            # If the user wants to delete, iterate over all movies and remove the file and log entry:
-            for index, row in self.player.log.iterrows():
-                if row['label'] == 'Delete Video':
+        # If the user wants to delete, iterate over all movies and remove the file and log entry:
+        for index, row in self.player.log.iterrows():
+            if row['label'] == 'Delete Video':
+                try:
+                    # Try to delete the video
                     os.remove(os.path.join(self.player.directory, row['movie_name']))  # Remove file
                     self.player.log.drop(index, inplace=True)  # Remove log entry
-            self.save_labels()  # Save the log
+                except:
+                    # If the file is not found, write a comment in the log
+                    self.player.log.iloc[index, 4] = "Could not delete file"
+                    print(self.player.log.iloc[index, :])
+                    self.player.log.to_csv(self.player.log_filepath, index=False)
 
     def move_swimming_vids(self):
         """ Move the swimming videos into a separate folder, split the log file entries to a new log."""
@@ -128,29 +136,34 @@ class FeedingLabeler:
 
         swim_directory = os.path.join(self.player.directory,'Swimming_vids')
         swim_log_filepath = os.path.join(swim_directory, 'swim_log.csv')
-
+        # Create the new log dataframe:
+        swim_log = pd.DataFrame(columns=['movie_name', 'parent_video',
+                                         'frame', 'coordinates', 'comments', 'label'])
         try:
+            # Create new directory for the swim files:
             os.mkdir(swim_directory)
-            # Create the new log dataframe:
-            swim_log = pd.DataFrame(columns=['movie_name', 'parent_video',
-                                             'frame', 'coordinates', 'comments', 'label'])
-            counter = 0
+
+            counter = 0  # count the entries to the log
         except FileExistsError:
+            # if the folder exists already, load the existing log:
             print('Folder exists')
             swim_log = pd.read_csv(swim_log_filepath)
-            counter=swim_log.shape[0]
+            # set the counter number to the last row index:
+            counter = swim_log.shape[0]
         # Iterate over all the videos:
-
         for index, row in self.player.log.iterrows():
             if row['label'] == 'Swimming':
-                # If it is a swimming video, rename to the vile to move it to a new directory:
-                os.rename(os.path.join(self.player.directory, row['movie_name']),
-                          os.path.join(swim_directory, row['movie_name']))
-                swim_log.loc[counter, :] = row  # Add the row to the swim log
-                self.player.log.drop(index, inplace=True)  # Remove log entry from the main log
+                try:
+                    # If it is a swimming video, rename to the vile to move it to a new directory:
+                    os.rename(os.path.join(self.player.directory, row['movie_name']),
+                            os.path.join(swim_directory, row['movie_name']))
+                    swim_log.loc[counter, :] = row  # Add the row to the swim log
+                    self.player.log.drop(index, inplace=True)  # Remove log entry from the main log
+                except:
+                    self.player.log.iloc[index, 4] = "Could not move file"
+                    print(self.player.log.iloc[index, :])
                 counter += 1
         swim_log.to_csv(swim_log_filepath, index=False)  # save the swim log
-        self.save_labels()  # Save the main log
 
     def save_labels(self):
         """ Save video labels to log file"""
