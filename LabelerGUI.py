@@ -263,10 +263,6 @@ class MoviePlayer:
         # Play button:
         self.btn_play = tk.Button(master=self.frm_vid_btns, text='Play/Pause', command=self.play_vid)
         self.btn_play.bind('<Button-1>', self.handle_play)  # Set the play/pause marker
-        # Fast forward buttons:
-        self.ff_pause = True
-        self.btn_fast_forward = tk.Button(master=self.frm_vid_btns, text='Fast Forward',
-                                          command=lambda: self.play_vid(play_speed=5))
         # Snapshot button:
         self.btn_snapshot = tk.Button(master=self.frm_vid_btns, text='Snapshot', command=self.get_snapshot)
         # Show the frame and the coordinates the video was cut from in the original video:
@@ -279,8 +275,7 @@ class MoviePlayer:
         self.btn_back.grid(row=0, column=2, sticky="e", padx=10)
         self.btn_play.grid(row=0, column=3, sticky="e", padx=10)
         self.btn_next.grid(row=0, column=4, sticky="e", padx=10)
-        self.btn_fast_forward.grid(row=0,column=5,sticky="e",padx=10)
-        self.btn_snapshot.grid(row=0, column=6, sticky="e", padx=10)
+        self.btn_snapshot.grid(row=0, column=5, sticky="e", padx=10)
         self.lbl_frame_centroid.grid(row=0, column=6, sticky="e", padx=10)
         self.panel.grid(row=0, column=1, sticky='nsew')
         self.frm_vid_btns.grid(row=1, column=1)
