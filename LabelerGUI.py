@@ -7,6 +7,7 @@ import pandas as pd
 from tkinter import messagebox
 import numpy as np
 
+
 class FeedingLabeler:
     """ The Feeding Labeler is a GUI to help tag video samples for the Larvae Feeding project. It is meant to be used
     to label videos cut by the Movie Cutter GUI.
@@ -326,9 +327,9 @@ class MoviePlayer:
             directories[:] = [d for d in directories if d not in ['Swimming_vids']]
             # Iterate ove all files in the directory:
             for filename in files:
-                # Join the two strings in order to form the full filepath.
+                # if a file is video add it's path to the video path list:
                 if filename.endswith('.avi'):
-                    # if a file is video add it's path to the video path list:
+                    # Join the two strings in order to form the full filepath.
                     filepath = os.path.join(root, filename)  # Assemble the full path
                     self.file_paths.append(filepath)  # Add it to the list
                 elif filename.endswith('.csv'):
@@ -349,7 +350,7 @@ class MoviePlayer:
             # In case of a mishap display a message to user:
             self.panel.create_text(250, 250, text='Video load failed')
             ans=input('Would you like to see the error? [y/n]')
-            if ans=='y':
+            if ans == 'y':
                 raise
 
     def handle_play(self, event=None):
