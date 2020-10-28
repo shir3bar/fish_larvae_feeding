@@ -376,9 +376,9 @@ class MovieCutter(MovieProcessor):
             subframe = gray[y:(y + h), x:(x + w)]
             lap = cv2.Laplacian(subframe, cv2.CV_64F).var()
             # Cutout the video segment subframe:
-            cutout = self.frame[entry[1][0]:entry[1][1], entry[0][0]:entry[0][1]]
+            cutout = gray[entry[1][0]:entry[1][1], entry[0][0]:entry[0][1]]
             if self.apply_brightness:
-                cutout = cv2.convertScaleAbs(cutout, alpha=1, beta=self.brighten)
+                cutout cv2.convertScaleAbs(cutout, alpha=1, beta=self.brighten)
             # Add the laplacian calculation to the dictionary entry
             entry[3].append(lap)
             # Deal with cases where the centroid is too close to the edges of the original frame,
