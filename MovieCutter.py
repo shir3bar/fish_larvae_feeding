@@ -100,7 +100,7 @@ class MovieProcessor:
         """
         BOUNDING_BOX_COLOUR = (255, 10, 0)  # BGR instead of RGB
         CENTROID_COLOUR = (255, 192, 0)  # BGR instead of RGB
-        gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)   # convert the image to grayscale
+        gray = self.frame.copy() #cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)   # convert the image to grayscale
         # begin depicting the processing by using the base frame, brighten it if the apply brightness is set to True
         # else use the original video frame:
         if self.apply_brightness:
@@ -134,9 +134,11 @@ class MovieProcessor:
         combined - a foreground mask created by fine-tuning the background subtractor output with edge detection.
         """
         if self.frame is None:
-            _, self.frame = self.cap.read()
-        # First process the new frame:
-        gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # Turn to grayscale
+            grabbed, self.frame = self.cap.read()
+            if grabbed:
+                gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # Turn to grayscale
+        # First set the new frame for tmp processing:
+        gray = self.frame.copy()
         # Apply gaussian blur to image using the kernel size defined by user:
         if self.blur[0] != 0:
             gray = cv2.GaussianBlur(gray, self.blur, 0)
@@ -196,6 +198,7 @@ class MovieProcessor:
             if not grabbed:
                 # If the video is finished, stop the loop
                 break
+            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
             counter += 1
             self.get_filter()  # get foreground mask
             self.get_contours()  # find objects inside the mask, get a list of their bounding boxes
@@ -219,7 +222,6 @@ class MovieProcessor:
     def reset_bg_subtractor(self):
         """ Reset the background subtractor"""
         self.bg_sub = cv2.createBackgroundSubtractorMOG2(history=self.num_train_frames, detectShadows=True)
-
 
 
 class MovieCutter(MovieProcessor):
@@ -257,9 +259,9 @@ class MovieCutter(MovieProcessor):
         # Get parent video name:
         self.parent_video_name = os.path.basename(vid_path)
         # this can be filled with '.' as it is usually dates of videos, so we'll get rid of them:
-        folder=''.join(self.parent_video_name.split('.')[0:-1])
+        folder = ''.join(self.parent_video_name.split('.')[0:-1])
         # and create a new folder in the save directory, named after the video file:
-        self.folder_name = os.path.join(save_dir,folder)
+        self.folder_name = os.path.join(save_dir, folder)
 
         self.movie_format = movie_format
         self.counter = 0   # Will track the original video frame number
@@ -273,12 +275,12 @@ class MovieCutter(MovieProcessor):
         self.med_laplacian = []  # mean laplacian value for each video segment
         self.movie_length = movie_length + 1  # Set the length of movies
         # Initiate the log dataframe:
-        self.log = pd.DataFrame(columns=['movie_name','parent_video','frame', 'coordinates','comments', 'label'])
+        self.log = pd.DataFrame(columns=['movie_name', 'parent_video', 'frame', 'coordinates', 'comments', 'label'])
         # And now the widgets and GUI integrations:
         self.progressbar = progressbar  # tkinter progress bar widget
         self.trainlabel = trainlabel  # tkinter label widget
         self.videos_released = False   # monitors whether video resources were closed properly
-          # will apply the change in brightness to the saved video segments
+        # will apply the change in brightness to the saved video segments
 
     def __repr__(self):
          return f'Brighten {self.brighten}; Blur {self.blur}; Minimum Width {self.min_width};' \
@@ -289,22 +291,34 @@ class MovieCutter(MovieProcessor):
         """ Get the bounds of a new video segment. This is makes sure all video
         files have the same frame size.
         Practically, it means that the centroid + padding and the centroid - padding
-        in every direction is within the original frame dimensions."""
+        in every direction is within the original frame dimensions.
+        If the padding goes out of bounds - push the other side back so the full wanted frame size will be preserved."""
+        x2 = 0
+        y2 = 0
         x1 = centroid[0] - self.padding  # Leftmost x point
         if x1 < 0:
-            # If negative, switch for 0:
+            # If negative, shift x2 by the difference of x1 from zero:
+            # note that the fish will not be in the center of the frame but we will not have issues with black margins
+            # in the videos.
+            # Once that is done zero out x1:
+            x2 = abs(x1)
             x1 = 0
-        x2 = centroid[0] + self.padding  # Rightmost x point
+        x2 += centroid[0] + self.padding  # Add the padding size the rightmost x point
         if x2 > self.SHAPE[0]:
-            # If overshoots original frame size, replace by the frame width:
+            # If overshoots original frame size, replace by the frame width and move the x1 back by the difference
+            # of x2 from the edge of the frame:
+            x1 -= (x2-int(self.SHAPE[0]))
             x2 = int(self.SHAPE[0])
         y1 = centroid[1] - self.padding  # Leftmost y point
         if y1 < 0:
-            # If negative, replace by 0:
+            # If negative, add the absolute value, i.e the difference from 0, to y2 and replace y1 to 0:
+            y2 = abs(y1)
             y1 = 0
-        y2 = int(centroid[1] + self.padding)  # Rightmost y point
+        y2 += int(centroid[1] + self.padding)  # Rightmost y point
         if y2 > self.SHAPE[1]:
-            # If overshoots original frame size, replace by the frame height:
+            # If overshoots original frame size, replace by the frame height and move y1 back by the difference of y2
+            # from the edge of the frame:
+            y1 -= (y2 - int(self.SHAPE[1]))
             y2 = int(self.SHAPE[1])
         return x1, x2, y1, y2  # Return the bounds for the video segments
 
@@ -318,7 +332,7 @@ class MovieCutter(MovieProcessor):
         for contour, centroid in self.bbox_dict.items():
             if contour in self.contour_dict.keys():
                 entry = self.contour_dict[contour]
-                self.close_segment(entry[3],contour)
+                self.close_segment(entry[3], contour)
             # If this contour doesn't have a movie already, get the bounds of the new video:
             x1, x2, y1, y2 = self.get_bounds(centroid)
             # Create a new entry for this fish - dimensions, frame counter,
@@ -370,13 +384,11 @@ class MovieCutter(MovieProcessor):
                 continue  # And move on to the next video
             # If it hasn't reached desired length, write movies:
             x, y, w, h = key  # Get the current fish bounding box dimensions
-            # Convert to grayscale to optimize and calculate laplacian:
-            gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
             # Get the object subframe and calculate laplacian on it:
-            subframe = gray[y:(y + h), x:(x + w)]
+            subframe = self.frame[y:(y + h), x:(x + w)]
             lap = cv2.Laplacian(subframe, cv2.CV_64F).var()
             # Cutout the video segment subframe:
-            cutout = gray[entry[1][0]:entry[1][1], entry[0][0]:entry[0][1]]
+            cutout = self.frame[entry[1][0]:entry[1][1], entry[0][0]:entry[0][1]]
             if self.apply_brightness:
                 cutout = cv2.convertScaleAbs(cutout, alpha=1, beta=self.brighten)
             # Add the laplacian calculation to the dictionary entry
@@ -434,6 +446,8 @@ class MovieCutter(MovieProcessor):
             if not grabbed:
                 # if the video is finished, stop:
                 break
+            # Convert to grayscale to optimize:
+            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
             if self.counter % check_every == 0:
                 # If we need to check for fish:
                 self.initiate_movies()  # create the fish movie segments for this frame
