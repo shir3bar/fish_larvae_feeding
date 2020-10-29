@@ -2,6 +2,7 @@
 import tkinter as tk
 import PIL.Image, PIL.ImageTk
 
+
 class AdvanceMovieCutterGUI:
 
     def __init__(self, movie_cutters):
@@ -22,12 +23,12 @@ class AdvanceMovieCutterGUI:
         self.set_attribute_widgets()
         self.display_attributes()
         self.btn_apply_brightness = tk.Checkbutton(master=self.frm_attributes,text='Save brightened videos',
-                                                   variable=self.apply_brightness,command=self.set_brightness)
-        self.btn_apply_changes = tk.Button(master=self.frm_attributes, text='Apply Changes', command=self.apply_changes)
+                                                   variable=self.apply_brightness, command=self.set_brightness)
+        self.btn_show_changes = tk.Button(master=self.frm_attributes, text='Show Changes', command=self.show_changes)
         self.frm_vid_control = tk.Frame(master=self.window)
         self.btn_preview = tk.Button(master=self.frm_vid_control, text="Preview", command=self.play_vid)
         self.btn_preview.bind('<Button-1>', self.handle_preview)
-        self.btn_back = tk.Button(master=self.frm_vid_control, text="\N{LEFTWARDS ARROW}",command=self.prev_vid)
+        self.btn_back = tk.Button(master=self.frm_vid_control, text="\N{LEFTWARDS ARROW}", command=self.prev_vid)
         self.btn_next = tk.Button(master=self.frm_vid_control, text="\N{RIGHTWARDS ARROW}", command=self.next_vid)
         self.panel = tk.Canvas(master=self.window, width=self.curr_movie_cutter.SHAPE[0],
                                height=800)
@@ -91,6 +92,7 @@ class AdvanceMovieCutterGUI:
             label = tk.Label(master=self.frm_attributes, text=value[1])
             entry = tk.Entry(master=self.frm_attributes, name=attribute)
             entry.bind('<Return>', self.update_attributes)
+            entry.bind('<FocusOut>', self.update_attributes)
             entry.bind('<Tab>', self.focus_next)
             self.attribute_labels_entries_dict[attribute] = [label, entry]
 
@@ -112,14 +114,14 @@ class AdvanceMovieCutterGUI:
             entry.grid(row=counter, column=0, sticky="ew", padx=5, pady=10)
             counter += 1
         self.btn_apply_brightness.grid(row=counter+1, column=0, sticky="ew", padx=5, pady=10)
-        self.btn_apply_changes.grid(row=counter+2, column=0, sticky="ew", padx=5, pady=10)
+        self.btn_show_changes.grid(row=counter+2, column=0, sticky="ew", padx=5, pady=10)
         self.frm_attributes.grid(row=0, column=0, sticky="ns")
 
         self.panel.grid(row=0, column=1, sticky="nsew")
         self.btn_preview.grid(row=0, column=0, sticky="ew", padx=10, pady=2)
         self.btn_back.grid(row=0, column=1, sticky="ew", padx=10, pady=2)
         self.btn_next.grid(row=0, column=2, sticky="ew", padx=10, pady=2)
-        self.frm_vid_control.grid(row=1,column=1)
+        self.frm_vid_control.grid(row=1, column=1)
 
     def set_cutter(self):
         self.curr_movie_cutter = self.movie_cutters[self.curr_cutter_idx]
@@ -168,7 +170,7 @@ class AdvanceMovieCutterGUI:
         value = self.attribute_labels_entries_dict[attribute_name][1].get()
         self.attribute_value_dict[attribute_name][2](value)
 
-    def apply_changes(self):
+    def show_changes(self):
         print(self.curr_movie_cutter)
         self.curr_movie_cutter.set_start_frame()
         self.curr_movie_cutter.reset_bg_subtractor()
