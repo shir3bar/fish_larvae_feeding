@@ -310,10 +310,15 @@ class MoviePlayer:
         for i,vid in enumerate(self.file_paths):
             # Iterate over the video files that were loaded and enter them as new rows in the dataframe:
             movie_name = os.path.basename(vid) # Get video name
-            processed_name = movie_name.split('_')
-            frame_num = int(processed_name[1])
-            coords = processed_name[3].split('-')
-            coords = (int(coords[0]),int(coords[1]))
+            try:
+                processed_name = movie_name.split('_')
+                frame_num = int(processed_name[1])
+                coords = processed_name[3].split('-')
+                coords = (int(coords[0]),int(coords[1]))
+            except:
+                #filenames are in the old format:
+                frame_num = int(movie_name.split('e')[1].split('f')[0])
+                coords = np.NaN
             # As we don't have any of the data about the parent video, we'll leave it blank for the user to fill later:
             self.log.loc[i, :] = {'movie_name': movie_name, 'parent_video': np.NaN,
                                   'frame': frame_num, 'coordinates': coords,
