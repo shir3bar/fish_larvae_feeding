@@ -238,7 +238,7 @@ class MovieCutter(MovieProcessor):
     BG_SUB_TRAIN_MSG = 'training background subtractor...'
     CUTTING_MSG = 'begin cutting:'
     END_MSG = 'Done!'
-    MOVIE_PREFIX = 'cutout_'  # movie file name prefix
+    MOVIE_PREFIX = 'cutout'  # movie file name prefix
 
     def __init__(self, vid_path, save_dir, padding=250, fps=30, start_frame=0,  movie_format='.avi',
                  movie_length=100,  progressbar=[], trainlabel=[]):
@@ -346,7 +346,8 @@ class MovieCutter(MovieProcessor):
         """ Create a new video for a fish. Create the name and full path for the movie and update
         the movie dictionary with a new video capture object. Update the log dataframe with the movie details."""
         # Create a file name for the video segment:
-        new_name = self.MOVIE_PREFIX + 'frame' + str(self.counter) + 'fish' + \
+        centroid_str = str(centroid[0])+'-'+str(centroid[1])
+        new_name = self.MOVIE_PREFIX + 'frame_' + str(self.counter) + '_coords_' + centroid_str + '_fish' + \
                    str(self.fish_idx) + self.movie_format
         movie_path = self.folder_name + os.path.sep + new_name  # Create the full path for the video segment
         # Create a list with the VideoWriter object for the new fish and the video file path:
