@@ -317,7 +317,10 @@ class MoviePlayer:
                 coords = (int(coords[0]),int(coords[1]))
             except:
                 #filenames are in the old format:
-                frame_num = int(movie_name.split('e')[1].split('f')[0])
+                try:
+                    frame_num = int(movie_name.split('e')[1].split('f')[0])
+                except:
+                    frame_num = np.NaN
                 coords = np.NaN
             # As we don't have any of the data about the parent video, we'll leave it blank for the user to fill later:
             self.log.loc[i, :] = {'movie_name': movie_name, 'parent_video': np.NaN,
