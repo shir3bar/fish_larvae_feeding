@@ -344,8 +344,9 @@ class MoviePlayer:
                     # Join the two strings in order to form the full filepath.
                     filepath = os.path.join(root, filename)  # Assemble the full path
                     self.file_paths.append(filepath)  # Add it to the list
-                elif filename.endswith('log.csv'):
+                elif filename.endswith('.csv'):
                     # if it's the log.csv file load it to a pandas data frame:
+                    print(filename)
                     self.log_filepath = os.path.join(root, filename)   # save path
                     self.log = pd.read_csv(self.log_filepath)  # load log
         if self.log.empty:
@@ -375,7 +376,7 @@ class MoviePlayer:
         try:
             # If the value entered is an integer this should work:
             user_selection = int(self.ent_vid_idx.get()) # Get the user selected value
-            if user_selection>self.num_vids:
+            if user_selection > self.num_vids:
                 # If the user selected a video index out of range, replace the value with the last video index:
                 user_selection = self.num_vids
             self.curr_vid.release()  # release the video capture object
