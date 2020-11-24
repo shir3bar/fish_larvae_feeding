@@ -264,7 +264,7 @@ class MovieCutter(MovieProcessor):
         self.folder_name = os.path.join(save_dir, folder)
 
         self.movie_format = movie_format
-        self.counter = 0   # Will track the original video frame number
+        self.counter = self.num_train_frames # Will track the original video frame number
         self.movie_counter = 0  # Track the number of video segments
         self.fish_idx = 0  # Track the number of blobs/fish in a frame
         # Contour_dict, holds the coordinates and bounding boxes of the fish as keys , the centroids as value:
