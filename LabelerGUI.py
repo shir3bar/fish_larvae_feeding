@@ -417,7 +417,12 @@ class MoviePlayer:
         """ Gets the label and comments fields from the log for the video that is loaded to the GUI"""
         if self.label_var:
             # Set the label variable to the label of the video in the log dataframe:
-            self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
+            try:
+                self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
+            except:
+                print(self.curr_movie_name)
+                print(self.file_paths)
+                self.next_vid()
             # setting this label_var will also display the label in the labeler GUI
         if self.comment_widget:
             # Write the comment data from the log to the comment entry field
