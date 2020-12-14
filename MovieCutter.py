@@ -240,7 +240,7 @@ class MovieCutter(MovieProcessor):
     END_MSG = 'Done!'
     MOVIE_PREFIX = 'cutout'  # movie file name prefix
 
-    def __init__(self, vid_path, save_dir, padding=250, fps=30, start_frame=0,  movie_format='.avi',
+    def __init__(self, vid_path, save_dir, padding=400, fps=30, start_frame=0,  movie_format='.avi',
                  movie_length=100,  progressbar=[], trainlabel=[]):
         """ Initiate a MovieCutter instance to chop fish larvae movies into segments.
         inputs:
