@@ -343,7 +343,7 @@ class MoviePlayer:
                     # Join the two strings in order to form the full filepath.
                     filepath = str(Path(os.path.join(root, filename)))  # Assemble the full path
                     self.file_paths.append(filepath)  # Add it to the list
-                elif filename.endswith('.csv'):
+                elif filename == 'log.csv':
                     # if it's the log.csv file load it to a pandas data frame:
                     print(filename)
                     self.log_filepath = os.path.join(root, filename)   # save path
