@@ -329,7 +329,7 @@ class MoviePlayer:
                                   'comments': '', 'label': None}
         # Create a filepath for the log:
         self.log_filepath = os.path.join(os.path.dirname(vid),'log.csv')
-        self.log.to_csv(self.log_filepath,index=False)  # Save the csv
+        self.log.to_csv(self.log_filepath, index=False)  # Save the csv
 
     def load_directory(self):
         """ Load all videos from user-selected directory to the GUI.
@@ -421,6 +421,8 @@ class MoviePlayer:
                 self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
             except:
                 print(self.curr_movie_name)
+                self.log.loc[self.log.movie_name == self.curr_movie_name].comments = 'Video not found in folder'
+                self.save_labels()
                 self.next_vid()
             # setting this label_var will also display the label in the labeler GUI
         if self.comment_widget:
