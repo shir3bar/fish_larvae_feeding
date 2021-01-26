@@ -27,6 +27,8 @@ class CutterApp():
         # Button to get the directory for saving the files (another subdirectory will be created in this directory):
         self.btn_save = tk.Button(self.frm_btn,text='Save to', command=self.save_dir)
         self.btn_advance= tk.Button(self.frm_btn,text='Advance Options', command=self.open_advance)
+        self.write_movies = tk.BooleanVar()
+        self.btn_write_movies = tk.Radiobutton(self.frm_btn,text='Just Log',variable=self.write_movies, value=False)
         # Button to start the video cutting proccess
         self.btn_start = tk.Button(self.frm_btn, text="Start Cutting", command=self.cut_movies)
         # This label shows some info to direct user actions:
@@ -50,7 +52,8 @@ class CutterApp():
         self.btn_open.grid(row=0,column=0, sticky="ew",padx=5,pady=2)
         self.btn_save.grid(row=0,column=1,sticky="ew",padx=5,pady=2)
         self.btn_advance.grid(row=0, column=2, sticky="ew", padx=5, pady=2)
-        self.btn_start.grid(row=0,column=3, sticky="ew",padx=5,pady=2)
+        self.btn_write_movies.grid(row=0,column=3,sticky="ew", padx=5, pady=2)
+        self.btn_start.grid(row=0,column=4, sticky="ew",padx=5,pady=2)
         self.frm_btn.grid(row=0)
         self.lbl_movie_counter.grid(row=2,column=0,sticky="nsew")
         self.lbl_training.grid(row=1,column=0,sticky="nsew")
@@ -99,7 +102,8 @@ class CutterApp():
                     self.savepath = os.path.dirname(self.vidpaths[i])
                 # Define a new movie cutter object:
                 self.movie_cutters.append(MovieCutter(self.vidpaths[i], self.savepath,
-                                                      trainlabel=self.lbl_training, progressbar=self.bar))
+                                                      trainlabel=self.lbl_training, progressbar=self.bar,
+                                                      save_movies=self.write_movies.get()))
             # Display the next set of user instructions on the GUI:
             self.lbl_training.configure(text=self.CUT_MSG)
             self.lbl_training.update()

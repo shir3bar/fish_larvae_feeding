@@ -241,7 +241,7 @@ class MovieCutter(MovieProcessor):
     MOVIE_PREFIX = 'cutout'  # movie file name prefix
 
     def __init__(self, vid_path, save_dir, padding=400, fps=30, start_frame=0,  movie_format='.avi',
-                 movie_length=100,  progressbar=[], trainlabel=[]):
+                 movie_length=100, save_movies=True,  progressbar=[], trainlabel=[]):
         """ Initiate a MovieCutter instance to chop fish larvae movies into segments.
         inputs:
         vid_path - path of the video file to cut
@@ -262,7 +262,7 @@ class MovieCutter(MovieProcessor):
         folder = ''.join(self.parent_video_name.split('.')[0:-1])
         # and create a new folder in the save directory, named after the video file:
         self.folder_name = os.path.join(save_dir, folder)
-
+        self.save_movies = save_movies
         self.movie_format = movie_format
         self.counter = self.num_train_frames # Will track the original video frame number
         self.movie_counter = 0  # Track the number of video segments
@@ -285,7 +285,7 @@ class MovieCutter(MovieProcessor):
     def __repr__(self):
          return f'Brighten {self.brighten}; Blur {self.blur}; Minimum Width {self.min_width};' \
              f' Minimum Height {self.min_height}; Clip Length {self.movie_length-1}; Start Frame {self.start_frame};' \
-             f' Apply Brightness {self.apply_brightness}'
+             f' Apply Brightness {self.apply_brightness}, Save Movies {self.save_movies}'
 
     def get_bounds(self, centroid):
         """ Get the bounds of a new video segment. This is makes sure all video
@@ -332,7 +332,8 @@ class MovieCutter(MovieProcessor):
         for contour, centroid in self.bbox_dict.items():
             if contour in self.contour_dict.keys():
                 entry = self.contour_dict[contour]
-                self.close_segment(entry[3], contour)
+                if self.save_movies:
+                    self.close_segment(entry[3], contour)
             # If this contour doesn't have a movie already, get the bounds of the new video:
             x1, x2, y1, y2 = self.get_bounds(centroid)
             # Create a new entry for this fish - dimensions, frame counter,
@@ -351,7 +352,8 @@ class MovieCutter(MovieProcessor):
                    str(self.fish_idx) + self.movie_format
         movie_path = self.folder_name + os.path.sep + new_name  # Create the full path for the video segment
         # Create a list with the VideoWriter object for the new fish and the video file path:
-        self.movie_dict[contour] = [cv2.VideoWriter(movie_path, self.fourcc, self.fps,
+        if self.save_movies:
+            self.movie_dict[contour] = [cv2.VideoWriter(movie_path, self.fourcc, self.fps,
                                                     (self.padding * 2, self.padding * 2), False), movie_path]
         # Create a new log entry:
         self.log.loc[self.movie_counter, :] = {'movie_name': new_name, 'parent_video': self.vid_path,
@@ -452,8 +454,8 @@ class MovieCutter(MovieProcessor):
             if self.counter % check_every == 0:
                 # If we need to check for fish:
                 self.initiate_movies()  # create the fish movie segments for this frame
-
-            self.write_movies()  # Write a frame to the movie segments initiated
+            if self.save_movies:
+                self.write_movies()  # Write a frame to the movie segments initiated
 
             if self.progressbar and self.counter % 10 == 0:
                 # Update the progress bar in decimal increments:
@@ -475,7 +477,8 @@ class MovieCutter(MovieProcessor):
 
     def close_everything(self):
         """ Release resources, save log and display end message."""
-        self.release_videos()
+        if self.save_movies:
+            self.release_videos()
         self.fps_timer.stop()  # Stop the fps_timer
         self.log.to_csv(os.path.join(self.folder_name,'log.csv'), index=False)  # Save the log dataframe to file
         f=open(os.path.join(self.folder_name,'cutter_profile.txt'),'w')
