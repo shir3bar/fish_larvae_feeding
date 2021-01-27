@@ -29,7 +29,7 @@ class CutterApp():
         self.btn_advance= tk.Button(self.frm_btn,text='Advance Options', command=self.open_advance)
         self.write_movies = tk.BooleanVar()
         self.btn_write_movies = tk.Checkbutton(self.frm_btn,text='Just Log',variable=self.write_movies,
-                                               onvalue=False, offvalue=True)
+                                               onvalue=0, offvalue=1)
         # Button to start the video cutting proccess
         self.btn_start = tk.Button(self.frm_btn, text="Start Cutting", command=self.cut_movies)
         # This label shows some info to direct user actions:
