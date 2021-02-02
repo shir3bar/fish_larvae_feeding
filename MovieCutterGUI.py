@@ -5,6 +5,10 @@ from tkinter.ttk import Progressbar
 from tkinter import messagebox
 import os
 from AdvanceMovieCutterGUI import AdvanceMovieCutterGUI
+import warnings
+import sys
+import logging
+
 
 class CutterApp():
     """ An application for cutting videos of fish larvae into smaller (in frame size) and shorter (frame length)
@@ -26,10 +30,12 @@ class CutterApp():
         self.btn_open = tk.Button(self.frm_btn, text="Open", command=self.open_vid)
         # Button to get the directory for saving the files (another subdirectory will be created in this directory):
         self.btn_save = tk.Button(self.frm_btn,text='Save to', command=self.save_dir)
-        self.btn_advance= tk.Button(self.frm_btn,text='Advance Options', command=self.open_advance)
+        self.btn_advance = tk.Button(self.frm_btn,text='Advance Options', command=self.open_advance)
         self.write_movies = tk.BooleanVar()
+
+        self.write_movies.set(1)
         self.btn_write_movies = tk.Checkbutton(self.frm_btn,text='Just Log',variable=self.write_movies,
-                                               onvalue=0, offvalue=1)
+                                               onvalue=0, offvalue=1,command=self.set_logging)
         # Button to start the video cutting proccess
         self.btn_start = tk.Button(self.frm_btn, text="Start Cutting", command=self.cut_movies)
         # This label shows some info to direct user actions:
@@ -60,12 +66,17 @@ class CutterApp():
         self.lbl_training.grid(row=1,column=0,sticky="nsew")
         self.bar.grid(row=3,sticky="e",pady=5,padx=5)
 
-
+    def set_logging(self):
+        if len(self.movie_cutters)>0:
+            for i in range(len(self.movie_cutters)):
+                self.movie_cutters[i] = MovieCutter(self.vidpaths[i], self.savepath,
+                                                      trainlabel=self.lbl_training, progressbar=self.bar,
+                                                      save_movies=self.write_movies.get())
 
     def open_vid(self):
         """Get the video file for cutting from the user."""
         # Open a system dialog to get the file path, multiple file selection enabled:
-        self.vidpaths += list(askopenfilenames(filetypes=[("Video Files", ["*.mp4", "*.avi"]),
+        self.vidpaths += list(askopenfilenames(filetypes=[("Video Files", ["*.mp4", "*.avi","*.seq"]),
                                                          ("All Files", "*.*")]))
         if not self.vidpaths:
             # if no file was chosen, stop the method:
@@ -105,6 +116,7 @@ class CutterApp():
                 self.movie_cutters.append(MovieCutter(self.vidpaths[i], self.savepath,
                                                       trainlabel=self.lbl_training, progressbar=self.bar,
                                                       save_movies=self.write_movies.get()))
+                print(self.movie_cutters[i])
             # Display the next set of user instructions on the GUI:
             self.lbl_training.configure(text=self.CUT_MSG)
             self.lbl_training.update()
@@ -134,5 +146,7 @@ class CutterApp():
 
 
 if __name__ == '__main__':
+    sys.stderr = open(os.devnull, "w")
     CutterApp()
+    sys.stderr = sys.__stderr__
 

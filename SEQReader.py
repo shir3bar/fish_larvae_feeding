@@ -3,15 +3,16 @@ import numpy as np
 from datetime import datetime
 import cv2
 
-class SEQReader():
+
+class SEQReader:
     INITIAL_BYTES_TO_DISCARD = 548
 
-    def __init__(self, filedir, endiantype):
+    def __init__(self, filedir, endiantype='<'):
         self.filedir = filedir
         self.endiantype = endiantype
         self.file_handle = open(filedir, "rb")
         self.read_header()
-        self.frame_pointer = self.properties['HeaderSize']
+        self.frame_pointer = -1
         self.image_buffers = np.array([], dtype='uint32')
 
     def read_header(self):
@@ -60,7 +61,6 @@ class SEQReader():
 
     def get_imagebuffers(self, idx):
         read_so_far = len(self.image_buffers)
-        print(read_so_far)
         # new images to read until reaching desired index:
         buffs = np.zeros(idx - read_so_far + 1, dtype='uint32')
 
@@ -105,7 +105,20 @@ class SEQReader():
         # decode jpeg:
         # frame = decode_jpeg(SEQ,colorspace='GRAY')
         frame = cv2.imdecode(SEQ, cv2.IMREAD_GRAYSCALE)
+        self.frame_pointer = idx
         return {'frame': frame, 'timestamp': timestamp}
+
+    def read(self):
+        if self.frame_pointer < self.properties['AllocatedFrames'] - 1:
+            frame = self.__getitem__(self.frame_pointer + 1)['frame']
+            ret = True
+        else:
+            frame = None
+            ret = False
+        return ret, frame
 
     def __len__(self):
         return self.properties['AllocatedFrames']
+
+    def release(self):
+        self.file_handle.close()

@@ -4,6 +4,9 @@ import cv2
 import numpy as np
 import pandas as pd
 from datetime import datetime
+from SEQReader import SEQReader
+import warnings
+
 
 
 class MovieProcessor:
@@ -24,6 +27,7 @@ class MovieProcessor:
         fps - define the rate of frames per second for the processed video output
         start_frame  - set the frame from which to start the processing of the video
         frame_limit - set how many frames will be used for the processing preview in process_vid method"""
+        warnings.filterwarnings('ignore')
         self.vid_path = vid_path
         self.folder_path = save_dir
         self.min_width = min_width  # minimal blob width
@@ -35,17 +39,28 @@ class MovieProcessor:
             self.blur = blur
         self.fps = fps
         # Create a video capture object:
-        self.cap = cv2.VideoCapture(vid_path)
+        if vid_path.endswith('.avi') or vid_path.endswith('.mp4'):
+            self.cap = cv2.VideoCapture(vid_path)
+            self.avi = True
+            # Get the number of frames in the original video:
+            self.num_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+            # Get the frame dimensions:
+            self.SHAPE = [int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))]
+        elif vid_path.endswith('.seq'):
+            self.cap = SEQReader(vid_path)
+            self.avi = False
+            self.num_frames = self.cap.properties['AllocatedFrames']
+            self.SHAPE = [int(self.cap.properties['ImageWidth']), int(self.cap.properties['ImageHeight'])]
+        else:
+            raise ValueError('Expected AVI or SEQ')
         # set the number of training frames to use for training the background subtractor:
         self.num_train_frames = num_train_frame
-        # Get the number of frames in the original video:
-        self.num_frames = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+
         # if the number of frames in the video is smaller than the number of training frames
         # for the background subtractor, reduce the amount of training frames:
         if self.num_train_frames > self.num_frames:
             self.num_train_frames = round(self.num_frames / 4)
-        # Get the frame dimensions:
-        self.SHAPE = [int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))]
+
         # Create background subtractor object:
         self.bg_sub = cv2.createBackgroundSubtractorMOG2(history=self.num_train_frames, detectShadows=True)
         # Name the output video:
@@ -68,7 +83,10 @@ class MovieProcessor:
         return cx, cy
 
     def set_start_frame(self):
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.start_frame)  # Set the start frame to the one selected by the user
+        if self.avi:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.start_frame)  # Set the start frame to the one selected by the user
+        else:
+            self.cap.frame_pointer = self.start_frame-1
 
     def get_contours(self):
         """ Get the blobs/contours/fish detected in the image.
@@ -136,7 +154,8 @@ class MovieProcessor:
         if self.frame is None:
             grabbed, self.frame = self.cap.read()
             if grabbed:
-                gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # Turn to grayscale
+                if self.avi:
+                    gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # Turn to grayscale
         # First set the new frame for tmp processing:
         gray = self.frame.copy()
         # Apply gaussian blur to image using the kernel size defined by user:
@@ -174,7 +193,10 @@ class MovieProcessor:
             # iterate over the selected number of frames
             # ret,frame=cap.read() # get one frame
             _, self.frame = self.cap.read()
-            gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # convert to grayscale
+            if self.avi:
+                gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)  # convert to grayscale
+            else:
+                gray = self.frame.copy()
             # apply gaussian blur, default kernel size is set to 0 so that no blurring occurs
             if self.blur[0] != 0:
                 gray = cv2.GaussianBlur(gray, self.blur, 0)
@@ -198,7 +220,8 @@ class MovieProcessor:
             if not grabbed:
                 # If the video is finished, stop the loop
                 break
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+            if self.avi:
+                self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
             counter += 1
             self.get_filter()  # get foreground mask
             self.get_contours()  # find objects inside the mask, get a list of their bounding boxes
@@ -450,7 +473,8 @@ class MovieCutter(MovieProcessor):
                 # if the video is finished, stop:
                 break
             # Convert to grayscale to optimize:
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+            if self.avi:
+                self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
             if self.counter % check_every == 0:
                 # If we need to check for fish:
                 self.initiate_movies()  # create the fish movie segments for this frame
