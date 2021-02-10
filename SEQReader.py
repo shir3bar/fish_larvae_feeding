@@ -32,28 +32,28 @@ class SEQReader:
                 620: 'YUV422_PPACKED', 700: 'UVY422', 800: 'UVY411', 900: 'UVY444'}
         properties['ImageFormat'] = fmts[dat[5]]
         self.file_handle.seek(572)
-        properties['AllocatedFrames'] = struct.unpack('<H', self.file_handle.read(2))[0]
+        properties['AllocatedFrames'] = struct.unpack(self.endiantype+'I', self.file_handle.read(2))[0]
         self.file_handle.seek(620)
-        properties['Compression'] = struct.unpack('<I', self.file_handle.read(4))[0]
+        properties['Compression'] = struct.unpack(self.endiantype+'I', self.file_handle.read(4))[0]
         self.file_handle.seek(28)
-        properties['HeaderVersion'] = struct.unpack('<l', self.file_handle.read(4))[0]
+        properties['HeaderVersion'] = struct.unpack(self.endiantype+'l', self.file_handle.read(4))[0]
         self.file_handle.seek(32)
-        properties['HeaderSize'] = struct.unpack('<l', self.file_handle.read(4))[0]
+        properties['HeaderSize'] = struct.unpack(self.endiantype+'l', self.file_handle.read(4))[0]
         self.file_handle.seek(592)
-        DescriptionFormat = struct.unpack('<l', self.file_handle.read(4))[0]
+        DescriptionFormat = struct.unpack(self.endiantype+'l', self.file_handle.read(4))[0]
         self.file_handle.seek(36)
         Description = []
         for i in range(512):
-            Description.append(struct.unpack('<H', self.file_handle.read(2))[0])
+            Description.append(struct.unpack(self.endiantype+'H', self.file_handle.read(2))[0])
         if DescriptionFormat == 0:  # ok Unicode
             Description = ''.join([chr(t) for t in Description])
         elif DescriptionFormat == 1:  # ok ASCII
             Description = ''.join([chr(t) for t in Description])
         properties['Description'] = Description
         self.file_handle.seek(580)
-        properties['TrueImageSize'] = struct.unpack('<L', self.file_handle.read(4))[0]
+        properties['TrueImageSize'] = struct.unpack(self.endiantype+'L', self.file_handle.read(4))[0]
         self.file_handle.seek(584)
-        properties['FrameRate'] = struct.unpack('<d', self.file_handle.read(8))[0]
+        properties['FrameRate'] = struct.unpack(self.endiantype+'d', self.file_handle.read(8))[0]
         assert (properties[
                     'ImageFormat'] == 'Monochrome'), f'Image format is not monochrome but {properties["ImageFormat"]}.'
         assert (properties['Compression'] == 1), 'Only compressed SEQs are supported'
