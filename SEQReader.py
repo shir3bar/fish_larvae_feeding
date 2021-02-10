@@ -32,7 +32,7 @@ class SEQReader:
                 620: 'YUV422_PPACKED', 700: 'UVY422', 800: 'UVY411', 900: 'UVY444'}
         properties['ImageFormat'] = fmts[dat[5]]
         self.file_handle.seek(572)
-        properties['AllocatedFrames'] = struct.unpack(self.endiantype+'I', self.file_handle.read(2))[0]
+        properties['AllocatedFrames'] = struct.unpack(self.endiantype+'I', self.file_handle.read(4))[0]
         self.file_handle.seek(620)
         properties['Compression'] = struct.unpack(self.endiantype+'I', self.file_handle.read(4))[0]
         self.file_handle.seek(28)
