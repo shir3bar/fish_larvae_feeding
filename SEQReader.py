@@ -13,7 +13,8 @@ class SEQReader:
         self.file_handle = open(filedir, "rb")
         self.read_header()
         self.frame_pointer = -1
-        self.image_buffers = np.array([], dtype='uint32')
+        self.image_buffers = np.array([],dtype='uint32')
+        self.buff_sums = np.zeros(self.properties['AllocatedFrames'],dtype='int64')
 
     def read_header(self):
         properties = {}
@@ -29,7 +30,7 @@ class SEQReader:
         # get image format:
         fmts = {0: 'Unknown', 100: 'Monochrome', 101: 'Raw Bayer', 200: 'BGR',
                 300: 'Planar', 400: 'RGB', 500: 'BGRx', 600: 'YUV422', 610: 'YUV422_20',
-                620: 'YUV422_PPACKED', 700: 'UVY422', 800: 'UVY411', 900: 'UVY444'}
+                620: 'YUV422_PACKED', 700: 'UVY422', 800: 'UVY411', 900: 'UVY444'}
         properties['ImageFormat'] = fmts[dat[5]]
         self.file_handle.seek(572)
         properties['AllocatedFrames'] = struct.unpack(self.endiantype+'I', self.file_handle.read(4))[0]
@@ -62,18 +63,19 @@ class SEQReader:
     def get_imagebuffers(self, idx):
         read_so_far = len(self.image_buffers)
         # new images to read until reaching desired index:
-        buffs = np.zeros(idx - read_so_far + 1, dtype='uint32')
+        buffs = np.zeros(idx - read_so_far + 1, dtype='int64')
 
         for i in range(len(buffs)):
             # The header size, plus of the buffers we've traversed so far
             # plus 8 bytes coding the timestamp and buffer size per image
             # will give us the location of the current image buffer bytes:
-            pointer = self.properties['HeaderSize'] + self.image_buffers.sum(dtype='uint32') + buffs.sum(
-                dtype='uint32') + 8 * read_so_far
+            id_sum = len(self.image_buffers) + i
+            pointer = self.properties['HeaderSize'] + self.buff_sums[max(0, id_sum - 1)] + 8 * read_so_far
             read_so_far += 1
             self.file_handle.seek(pointer)
             # unpack the image buffer size and store in the relevant index:
-            buffs[i] = struct.unpack(self.endiantype + 'I', self.file_handle.read(4))[0]
+            buffs[i] = struct.unpack('<I', self.file_handle.read(4))[0]
+            self.buff_sums[id_sum] = self.buff_sums[max(0, id_sum - 1)] + buffs[i]
         self.image_buffers = np.concatenate([self.image_buffers, buffs])
 
     def readTimestamp(self):
@@ -92,7 +94,7 @@ class SEQReader:
             self.get_imagebuffers(idx)
         buff = self.image_buffers[idx]  # get wanted image buffer size
         # set frame pointer:
-        readStart = self.properties['HeaderSize'] + self.image_buffers[:idx].sum(dtype='uint32') + 8 * idx
+        readStart = self.properties['HeaderSize'] + self.buff_sums[idx-1]+8*idx#self.image_buffers[:idx].sum(dtype='int64')+8*idx
         # read compressed image:
         readStart = readStart + 4  # jump past the bytes encoding the image buffer size
         self.file_handle.seek(readStart)
