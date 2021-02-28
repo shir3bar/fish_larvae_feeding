@@ -304,6 +304,25 @@ class MoviePlayer:
             self.curr_vid.set(cv2.CAP_PROP_POS_FRAMES, curr_frame-2)
             self.display_frame()
 
+    def get_entry(self,movie_name):
+        try:
+            processed_name = movie_name.split('_')
+            frame_num = int(processed_name[1])
+            coords = processed_name[3].split('-')
+            coords = (int(coords[0]), int(coords[1]))
+        except:
+            # filenames are in the old format:
+            try:
+                frame_num = int(movie_name.split('e')[1].split('f')[0])
+            except:
+                frame_num = np.NaN
+            coords = np.NaN
+        # As we don't have any of the data about the parent video, we'll leave it blank for the user to fill later:
+        entry= {'movie_name': movie_name, 'parent_video': np.NaN,
+                              'frame': frame_num, 'coordinates': coords,
+                              'comments': '', 'label': None}
+        return entry
+
     def create_missing_log(self):
         """ Create a new log file if no log file exists in the folder"""
         # Create the dataframe for the log:
@@ -311,22 +330,8 @@ class MoviePlayer:
         for i,vid in enumerate(self.file_paths):
             # Iterate over the video files that were loaded and enter them as new rows in the dataframe:
             movie_name = os.path.basename(vid) # Get video name
-            try:
-                processed_name = movie_name.split('_')
-                frame_num = int(processed_name[1])
-                coords = processed_name[3].split('-')
-                coords = (int(coords[0]),int(coords[1]))
-            except:
-                #filenames are in the old format:
-                try:
-                    frame_num = int(movie_name.split('e')[1].split('f')[0])
-                except:
-                    frame_num = np.NaN
-                coords = np.NaN
-            # As we don't have any of the data about the parent video, we'll leave it blank for the user to fill later:
-            self.log.loc[i, :] = {'movie_name': movie_name, 'parent_video': np.NaN,
-                                  'frame': frame_num, 'coordinates': coords,
-                                  'comments': '', 'label': None}
+            entry = self.get_entry(movie_name)
+            self.log.loc[i, :] = entry
         # Create a filepath for the log:
         self.log_filepath = os.path.join(os.path.dirname(vid),'log.csv')
         self.log.to_csv(self.log_filepath, index=False)  # Save the csv
@@ -420,6 +425,8 @@ class MoviePlayer:
             try:
                 self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
             except:
+                entry = self.get_entry(self.curr_movie_name)
+                self.log.loc[len(self.log),:] = entry
                 self.log.loc[self.log.movie_name == self.curr_movie_name].comments = 'Video not found in folder'
 
             # setting this label_var will also display the label in the labeler GUI
