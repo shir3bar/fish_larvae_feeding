@@ -421,7 +421,7 @@ class MoviePlayer:
                 self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
             except:
                 self.log.loc[self.log.movie_name == self.curr_movie_name].comments = 'Video not found in folder'
-                self.next_vid()
+
             # setting this label_var will also display the label in the labeler GUI
         if self.comment_widget:
             # Write the comment data from the log to the comment entry field
@@ -452,17 +452,20 @@ class MoviePlayer:
         self.curr_movie_name = os.path.basename(self.file_paths[self.curr_vid_idx])
         # If integrated with the FeedingLabeler GUI, get the label and comments from the log:
         self.get_log_entries()
-        # Display the frame and coordinates (in the original video) from which this video was cut:
-        txt = self.log.loc[self.log.movie_name == self.curr_movie_name,
-                          ['frame', 'coordinates']].to_string(index=False)  # retrieve the relevant data
-        self.lbl_frame_centroid.configure(text=txt)  # display the text in the widget
-        # And finally, open the video file:
-        self.curr_vid = cv2.VideoCapture(self.file_paths[self.curr_vid_idx])
-        self.display_frame()  # display the first frame in the video
-        self.window.title(self.curr_movie_name)  # change the GUI title to the current video name
-        # Start playing the video automatically when a new video is set
-        self.handle_play()
-        self.play_vid()   # event is set to True so that the play button would be handled as if clicked
+        if self.log.loc[self.log.movie_name == self.curr_movie_name].comments == 'Video not found in folder':
+            self.next_vid()
+        else:
+            # Display the frame and coordinates (in the original video) from which this video was cut:
+            txt = self.log.loc[self.log.movie_name == self.curr_movie_name,
+                              ['frame', 'coordinates']].to_string(index=False)  # retrieve the relevant data
+            self.lbl_frame_centroid.configure(text=txt)  # display the text in the widget
+            # And finally, open the video file:
+            self.curr_vid = cv2.VideoCapture(self.file_paths[self.curr_vid_idx])
+            self.display_frame()  # display the first frame in the video
+            self.window.title(self.curr_movie_name)  # change the GUI title to the current video name
+            # Start playing the video automatically when a new video is set
+            self.handle_play()
+            self.play_vid()   # event is set to True so that the play button would be handled as if clicked
 
     def play_vid(self,event=None,play_speed=15):
         """ This method plays the video file currently loaded to the GUI.
