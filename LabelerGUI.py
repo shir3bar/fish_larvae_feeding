@@ -423,10 +423,13 @@ class MoviePlayer:
         if self.label_var:
             # Set the label variable to the label of the video in the log dataframe:
             try:
+                print('loaded',self.curr_movie_name)
                 self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
             except:
+                print('not', self.curr_movie_name)
                 entry = self.get_entry(self.curr_movie_name)
                 self.log.loc[len(self.log),:] = entry
+                print(self.log.loc[len(self.log),:])
                 self.log.loc[self.log.movie_name == self.curr_movie_name].comments = 'Video not found in folder'
 
             # setting this label_var will also display the label in the labeler GUI
