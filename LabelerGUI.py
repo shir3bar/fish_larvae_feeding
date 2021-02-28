@@ -420,7 +420,6 @@ class MoviePlayer:
             try:
                 self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
             except:
-                print(self.curr_movie_name)
                 self.log.loc[self.log.movie_name == self.curr_movie_name].comments = 'Video not found in folder'
                 self.next_vid()
             # setting this label_var will also display the label in the labeler GUI
