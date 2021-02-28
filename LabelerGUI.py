@@ -422,7 +422,6 @@ class MoviePlayer:
             except:
                 print(self.curr_movie_name)
                 self.log.loc[self.log.movie_name == self.curr_movie_name].comments = 'Video not found in folder'
-                self.save_labels()
                 self.next_vid()
             # setting this label_var will also display the label in the labeler GUI
         if self.comment_widget:
