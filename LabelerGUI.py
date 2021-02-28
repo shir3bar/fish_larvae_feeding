@@ -428,7 +428,7 @@ class MoviePlayer:
             except:
                 print('not', self.curr_movie_name)
                 entry = self.get_entry(self.curr_movie_name)
-                self.log.loc[len(self.log),:] = entry
+                self.log = self.log.append(entry,ignore_index=True)
                 print(self.log.loc[len(self.log),:])
                 self.log.loc[self.log.movie_name == self.curr_movie_name].comments = 'Video not found in folder'
 
