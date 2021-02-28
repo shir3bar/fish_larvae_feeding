@@ -342,17 +342,18 @@ class MoviePlayer:
         self.directory=askdirectory() # get directory
         for root, directories, files in os.walk(self.directory,topdown=True):
             # Iterate ove all files in the directory:
-            for filename in files:
-                # if a file is video add it's path to the video path list:
-                if filename.endswith('.avi'):
-                    # Join the two strings in order to form the full filepath.
-                    filepath = str(Path(os.path.join(root, filename)))  # Assemble the full path
-                    self.file_paths.append(filepath)  # Add it to the list
-                elif filename == 'log.csv':
-                    # if it's the log.csv file load it to a pandas data frame:
-                    print(filename)
-                    self.log_filepath = os.path.join(root, filename)   # save path
-                    self.log = pd.read_csv(self.log_filepath)  # load log
+            if os.path.dirname(root) != 'Swimming_vids':
+                for filename in files:
+                    # if a file is video add it's path to the video path list:
+                    if filename.endswith('.avi'):
+                        # Join the two strings in order to form the full filepath.
+                        filepath = str(Path(os.path.join(root, filename)))  # Assemble the full path
+                        self.file_paths.append(filepath)  # Add it to the list
+                    elif filename == 'log.csv':
+                        # if it's the log.csv file load it to a pandas data frame:
+                        print(filename)
+                        self.log_filepath = os.path.join(root, filename)   # save path
+                        self.log = pd.read_csv(self.log_filepath)  # load log
             break
         if self.log.empty:
             # Create a new log file if one doesn't exist:
@@ -423,13 +424,12 @@ class MoviePlayer:
         if self.label_var:
             # Set the label variable to the label of the video in the log dataframe:
             try:
-                print('loaded',self.curr_movie_name)
                 self.label_var.set(self.log.loc[self.log.movie_name == self.curr_movie_name].label.values[0])
             except:
                 print('not', self.curr_movie_name)
                 entry = self.get_entry(self.curr_movie_name)
+                entry['comments'] = 'Video not found in folder'
                 self.log = self.log.append(entry,ignore_index=True)
-                self.log.loc[self.log.movie_name == self.curr_movie_name].comments = 'Video not found in folder'
                 print(self.log.loc[self.log.movie_name == self.curr_movie_name])
             # setting this label_var will also display the label in the labeler GUI
         if self.comment_widget:
