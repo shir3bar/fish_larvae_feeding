@@ -9,7 +9,7 @@ import numpy as np
 from pathlib import Path
 
 
-class FeedingLabeler:
+class Labeler:
     """ The Feeding Labeler is a GUI to help tag video samples for the Larvae Feeding project. It is meant to be used
     to label videos cut by the Movie Cutter GUI.
     The user selects a directory using the 'Load Movies' button, the movies are then presented in the Movie Player
@@ -530,4 +530,4 @@ class MoviePlayer:
 
 
 if __name__ == '__main__':
-    FeedingLabeler()
+    Labeler()
