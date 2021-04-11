@@ -16,9 +16,14 @@ class FeedingLabeler:
          # Main consideration was that it should function well cross-platform, as it was developed in a Mac environment
         # and designated to run in a Windows environment.
         self.window = tk.Tk()
+        self.height = int(2*1080/3)
+        self.width = int(2*1920/3)
+        self.window.geometry(f"{self.width:d}x{self.height:d}")
         # Define the widgets containing the labels for the videos:
         self.define_btns()
         self.pause = True  # Play/pause marker, to make the play button function as a pause as well
+        self.centroid = (0,0)
+
         # Set the layout of the labeling window:
         self.set_layout()
         # This will be our video player once we load some movies, see the get_dir method:
@@ -29,7 +34,9 @@ class FeedingLabeler:
         self.window.mainloop()  # Start the main event loop of the GUI
 
     def define_btns(self):
-        self.video_panel = tk.Canvas(master=self.window, width=800, height=500)
+        self.video_panel = tk.Canvas(master=self.window, width=700, height=500)
+        self.video_panel.bind('<Button-1>', self.displayclick)
+        self.video_panel.bind('<Button-2>', self.removeclick)
         self.frm_admin_btns = tk.Frame(master=self.window)
         self.btn_load = tk.Button(master=self.frm_admin_btns, text = 'load video',command=self.load_vid)
         self.btn_save_seg = tk.Button(master=self.frm_admin_btns, text='save segment', command=self.save_segment)
@@ -43,15 +50,27 @@ class FeedingLabeler:
 
     def set_layout(self):
         """ Layout all the GUI widgets"""
-        self.btn_load.grid(row=0, column=0, sticky='e', pady=10)
-        self.btn_save_seg.grid(row=1, column=0, sticky='e', pady=10)
-        self.frm_admin_btns.grid(row=0,column=0, sticky='nsew')
-        self.btn_back.grid(row=0, column=2, sticky="e", padx=10)
-        self.btn_play.grid(row=0, column=3, sticky="e", padx=10)
-        self.btn_next.grid(row=0, column=4, sticky="e", padx=10)
-        self.lbl_frame_centroid.grid(row=0, column=6, sticky="e", padx=10)
-        self.video_panel.grid(row=0, column=1, sticky='nsew')
-        self.frm_vid_btns.grid(row=1, column=1, sticky='nsew')
+        #self.window.columnconfigure(0, weight=1)
+        #self.window.rowconfigure(0, weight=1)
+        self.btn_load.pack(expand=0,pady=10)#.grid(row=0, column=0, sticky='e', pady=10)
+        self.btn_save_seg.pack(expand=0)#.grid(row=1, column=0, sticky='e', pady=10)
+        self.frm_admin_btns.pack(expand=0, fill=tk.BOTH,side=tk.LEFT)#.grid(row=0,column=0, sticky='nsew')
+        self.btn_back.pack(expand=0,side=tk.LEFT)#.grid(row=0, column=2, sticky="e", padx=10)
+        self.btn_play.pack(expand=0, fill=tk.BOTH,side=tk.LEFT)#.grid(row=0, column=3, sticky="e", padx=10)
+        self.btn_next.pack(expand=0, fill=tk.BOTH,side=tk.LEFT)#.grid(row=0, column=4, sticky="e", padx=10)
+        self.lbl_frame_centroid.pack(expand=0, fill=tk.BOTH,side=tk.BOTTOM)#.grid(row=0, column=6, sticky="e", padx=10)
+        self.video_panel.pack(expand=1, fill=tk.BOTH,side=tk.TOP)#.grid(row=0, column=1, sticky='nsew')
+        self.frm_vid_btns.pack(expand=0, fill=tk.BOTH,side=tk.BOTTOM)#.grid(row=1, column=1, sticky='nsew')
+        self.video_panel.bind('<Configure>', self._resize_image)
+
+    def _resize_image(self,event):
+
+        self.width = event.width
+        self.height = event.height
+
+        self.frame = self.photo_copy.resize((self.width, self.height))
+        self.photo = PIL.ImageTk.PhotoImage(image=self.frame)
+        self.video_panel.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
     def load_vid(self):
         self.vidpath = list(askopenfilenames(filetypes=[("Video Files", ["*.mp4", "*.avi", "*.seq"])]))
@@ -61,23 +80,61 @@ class FeedingLabeler:
             return
         self.window.title(f"Feeding Analyzer - {self.vidpath[0]}")
         self.vid = SEQReader(self.vidpath[0])
+        self.centroids_by_frm = np.zeros((len(self.vid),2))
+
 
     def on_close(self):
+        print(self.centroids_by_frm)
         self.window.quit()
 
-    def display_frame(self, event=None):
+    def draw_centroid(self):
+        if self.centroid!=(0,0) and self.centroid!=(-1,-1) :
+            self.video_panel.create_oval(self.centroid[0],self.centroid[1],
+                                     5+self.centroid[0],5+self.centroid[1],
+                                     outline="#f11", width=2)
+
+    def displayclick(self,event):
+        self.lbl_frame_centroid.configure(text=f'{event.y/self.height},{event.x/self.width}')
+        self.lbl_frame_centroid.update()
+        self.video_panel.create_image(0, 0, image=self.photo, anchor=tk.NW)  # Draw the image in the Panel widget
+        self.centroid = (event.x,event.y)
+        self.centroids_by_frm[self.vid.frame_pointer,:] = self.centroid
+        self.draw_centroid()
+
+    def removeclick(self, event):
+        self.centroid = (-1,-1)
+        self.video_panel.create_image(0, 0, image=self.photo, anchor=tk.NW)  # Draw the image in the Panel widget
+        self.centroids_by_frm[self.vid.frame_pointer, :] = self.centroid
+        result = messagebox.askquestion('segment save', 'do you want to save segment?')
+        if result=='yes':
+            self.save_segment()
+
+    def display_frame(self, event=None,back=False):
         """Read a single frame from the current video and display it onto the GUI."""
         ret, frame = self.vid.read()  # Read a single frame
-        self.frame = frame  # Save that frame
-        self.photo = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(frame))  # Convert frame to display it on GUI
+        self.frame = PIL.Image.fromarray(frame)  # Save that frame
+        self.frame = self.frame.resize((self.width,self.height))
+        self.photo = PIL.ImageTk.PhotoImage(image=self.frame)  # Convert frame to display it on GUI
+        self.photo_copy = PIL.Image.fromarray(frame)
         self.video_panel.create_image(0, 0, image=self.photo, anchor=tk.NW)  # Draw the image in the Panel widget
+        if not back:
+            if self.centroids_by_frm[self.vid.frame_pointer,:].sum() != 0:
+                self.centroid = tuple(self.centroids_by_frm[self.vid.frame_pointer,:])
+            else:
+                self.centroids_by_frm[self.vid.frame_pointer,:] = self.centroid
+            self.draw_centroid()
+        else:
+            self.centroid = tuple(self.centroids_by_frm[self.vid.frame_pointer, :])
+            self.draw_centroid()
 
     def save_segment(self):
         pass
 
     def prev_frame(self):
         self.vid.frame_pointer -= 2
-        self.display_frame()
+        if self.vid.frame_pointer < -1:
+            self.vid.frame_pointer = -1
+        self.display_frame(back=True)
 
     def next_frame(self):
         self.display_frame()
