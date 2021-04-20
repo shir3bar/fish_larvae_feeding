@@ -270,7 +270,8 @@ class FeedingLabeler:
                 centroid = self.centroids_by_frm[frame_num,::-1]
                 row, col = self.translate_centroid(centroid)
                 frm_tmp = frame_num+1
-                movie_name = f'frame_{frm_tmp}_coords_{row}-{col}.avi'
+                parent_vidname = os.path.basename(self.vidpath).split('.')[0]
+                movie_name = f'{parent_vidname}_frame_{frm_tmp}_coords_{row}-{col}.avi'
                 entry = {'source_vid': self.vidpath, 'start_frame': frm_tmp,'coords':(row,col)}
                 movie_path = os.path.join(self.save_dir,movie_name)
                 video_writer = cv2.VideoWriter(movie_path, self.fourcc, self.fps,
@@ -297,6 +298,7 @@ class FeedingLabeler:
                 self.last_frame_written = i
             else:
                 frame_num += 1
+        messagebox.showinfo('segment saved!', f'finished saving at {movie_path}')
 
 
     def zero_vars(self):
