@@ -159,6 +159,8 @@ class FeedingLabeler:
             self.video_panel.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
     def load_vid(self):
+        if self.vid_loaded:
+            self.log.to_csv(self.log_path)
         self.vidpath = list(askopenfilenames(filetypes=[("Video Files", ["*.mp4", "*.avi", "*.seq"])]))
         print(self.vidpath)
         if not self.vidpath:
@@ -179,15 +181,14 @@ class FeedingLabeler:
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
         else:
-            log_path = os.path.join(self.save_dir,'feeding_log.csv')
-            if os.path.exists(log_path):
-                self.log = pd.read_csv(log_path)
+            self.log_path = os.path.join(self.save_dir,'feeding_log.csv')
+            if os.path.exists(self.log_path):
+                self.log = pd.read_csv(self.log_path)
         self.display_frame()
 
     def on_close(self):
         if self.vid_loaded:
-            path = os.path.join(self.save_dir,'feeding_log.csv')
-            self.log.to_csv(path)
+            self.log.to_csv(self.log_pathpath)
         self.window.quit()
 
     def rewind(self):
