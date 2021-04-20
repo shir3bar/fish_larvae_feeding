@@ -183,7 +183,7 @@ class FeedingLabeler:
         else:
             self.log_path = os.path.join(self.save_dir,'feeding_log.csv')
             if os.path.exists(self.log_path):
-                self.log = pd.read_csv(self.log_path,index_col=0)
+                self.log = pd.read_csv(self.log_path)
         self.display_frame()
 
     def on_close(self):
