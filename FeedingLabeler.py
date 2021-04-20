@@ -52,7 +52,7 @@ class FeedingLabeler:
         self.video_panel.bind('<Button-2>', self.removeclick)
         self.frm_admin_btns = tk.Frame(master=self.window)
         self.btn_load = tk.Button(master=self.frm_admin_btns, text = 'load video',command=self.load_vid)
-        self.btn_save_seg = tk.Button(master=self.frm_admin_btns, text='save segment', command=self.save_segment)
+        self.btn_save_seg = tk.Button(master=self.frm_admin_btns, text='save segment', command=self.removie_click)
         self.define_label_frm()
         self.lbl_frame_centroid = tk.Label(master=self.frm_admin_btns, text='', fg='red')
         self.define_vid_frm()
@@ -178,11 +178,15 @@ class FeedingLabeler:
         self.save_dir = os.path.join(os.path.dirname(self.vidpath), 'feeding_events')
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
+        else:
+            log_path = os.path.join(self.save_dir,'feeding_log.csv')
+            if os.path.exists(log_path):
+                self.log = pd.read_csv(log_path)
         self.display_frame()
 
     def on_close(self):
         if self.vid_loaded:
-            path = os.path.join(os.path.dirname(self.save_dir),'feeding_log.csv')
+            path = os.path.join(self.save_dir,'feeding_log.csv')
             self.log.to_csv(path)
         self.window.quit()
 
