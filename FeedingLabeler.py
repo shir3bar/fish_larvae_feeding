@@ -52,7 +52,7 @@ class FeedingLabeler:
         self.video_panel.bind('<Button-2>', self.removeclick)
         self.frm_admin_btns = tk.Frame(master=self.window)
         self.btn_load = tk.Button(master=self.frm_admin_btns, text = 'load video',command=self.load_vid)
-        self.btn_save_seg = tk.Button(master=self.frm_admin_btns, text='save segment', command=self.remove_click)
+        self.btn_save_seg = tk.Button(master=self.frm_admin_btns, text='save segment', command=self.removeclick)
         self.define_label_frm()
         self.lbl_frame_centroid = tk.Label(master=self.frm_admin_btns, text='', fg='red')
         self.define_vid_frm()
