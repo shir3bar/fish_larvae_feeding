@@ -53,6 +53,7 @@ class FeedingLabeler:
         self.frm_admin_btns = tk.Frame(master=self.window)
         self.btn_load = tk.Button(master=self.frm_admin_btns, text = 'load video',command=self.load_vid)
         self.btn_save_seg = tk.Button(master=self.frm_admin_btns, text='save segment', command=self.removeclick)
+        self.btn_clear_selection = tk.Button(master=self.frm_admin_btns, text='undo click', command=self.clear_click_selection)
         self.define_label_frm()
         self.lbl_frame_centroid = tk.Label(master=self.frm_admin_btns, text='', fg='red')
         self.define_vid_frm()
@@ -93,6 +94,7 @@ class FeedingLabeler:
         #self.window.rowconfigure(0, weight=1)
         self.btn_load.pack(expand=0,pady=10)#.grid(row=0, column=0, sticky='e', pady=10)
         self.btn_save_seg.pack(expand=0)#.grid(row=1, column=0, sticky='e', pady=10)
+        self.btn_clear_selection.pack(expand=0,pady=10)
         self.set_label_frm()
         self.frm_label.pack(expand=1)
         self.lbl_frame_centroid.pack(expand=1,side=tk.BOTTOM,pady=100)
@@ -154,7 +156,8 @@ class FeedingLabeler:
         if self.vid_loaded:
             self.width = event.width
             self.height = event.height
-            self.frame = self.photo_copy.resize((self.width, self.height))
+            self.frame = self.photo_copy.copy()
+            self.frame = self.frame.resize((self.width, self.height))
             self.photo = PIL.ImageTk.PhotoImage(image=self.frame)
             self.video_panel.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
@@ -207,7 +210,7 @@ class FeedingLabeler:
                                      outline="#f11", width=2)
 
     def displayclick(self,event):
-        self.lbl_frame_centroid.configure(text=f'{event.x:.3f}, {event.y:.3f} \n {self.width},{self.height}')
+        self.lbl_frame_centroid.configure(text=f'{event.x:.3f}, {event.y:.3f}')
         self.lbl_frame_centroid.update()
         self.video_panel.create_image(0, 0, image=self.photo, anchor=tk.NW)  # Draw the image in the Panel widget
         self.centroid = (event.x/self.width, event.y/self.height)
@@ -222,6 +225,13 @@ class FeedingLabeler:
         result = messagebox.askquestion('segment save', 'do you want to save segment?')
         if result=='yes':
             self.save_segment()
+
+    def clear_click_selection(self):
+        self.centroid = (0,0)
+        self.centroids_by_frm[self.vid.frame_pointer,:] = self.centroid
+        self.video_panel.create_image(0, 0, image=self.photo, anchor=tk.NW)
+        self.lbl_frame_centroid.configure(' ')
+        self.lbl_frame_centroid.update()
 
     def display_frame(self, event=None,back=False):
         """Read a single frame from the current video and display it onto the GUI."""
@@ -309,6 +319,8 @@ class FeedingLabeler:
     def zero_vars(self):
         self.comment =''
         self.ent_comment.delete(0, 'end')
+        self.lbl_frame_centroid.configure(' ')
+        self.lbl_frame_centroid.update()
         self.label.set(None)
 
     def prev_frame(self):
