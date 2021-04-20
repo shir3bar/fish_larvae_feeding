@@ -71,6 +71,8 @@ class FeedingLabeler:
         self.btn_play = tk.Button(master=self.frm_vid_btns,bg='blue',relief= 'raised',
                                   text='Play/Pause',width=10,height=3,
                                   command=self.play_vid)
+        self.ent_frame_idx = tk.Entry(master=self.frm_vid_btns,name='ent_id',text=str(0), width=3)
+        self.ent_frame_idx.bind("<Return>", self.navigate_to_frame)  # When user presses "Enter", current video will change
         self.btn_rewind = tk.Button(master=self.frm_vid_btns,bg='pink',relief='raised', text= 'Rewind',
                                     width=3, height=3, command=self.rewind)
         self.btn_play.bind('<Button-1>', self.handle_play)  # Set the play/pause marker
@@ -107,11 +109,13 @@ class FeedingLabeler:
         self.frm_vid_btns.grid_columnconfigure(4, weight=1, uniform='middle')
         self.frm_vid_btns.grid_columnconfigure(11, weight=3, uniform='middle')
         self.frm_vid_btns.grid_columnconfigure(15, weight=1, uniform='middle')
+        self.frm_vid_btns.grid_columnconfigure(20, weight=1, uniform='middle')
         self.frm_vid_btns.grid_columnconfigure(24, weight=1, uniform='middle')
-        self.btn_back.grid(row=0, column=4, sticky="nsew",pady=25, padx=10,columnspan=3)
-        self.btn_play.grid(row=0, column=11, sticky="nsew",pady=25, padx=10)
-        self.btn_rewind.grid(row=0, column=15, sticky='nsew',pady=25, padx=10,columnspan=3)
-        self.btn_next.grid(row=0, column=24, sticky="nsew",pady=25, padx=10,columnspan=3)
+        self.btn_back.grid(row=0, column=4, sticky="nsew", pady=25, padx=10,columnspan=3)
+        self.btn_play.grid(row=0, column=11, sticky="nsew", pady=25, padx=10)
+        self.btn_rewind.grid(row=0, column=15, sticky='nsew', pady=25, padx=10,columnspan=3)
+        self.ent_frame_idx.grid(row=0, column=20, sticky='nsew', pady=25, padx=10,columnspan=3)
+        self.btn_next.grid(row=0, column=24, sticky="nsew", pady=25, padx=10,columnspan=3)
 
     def set_label_frm(self):
         for i in range(len(self.btn_labels)):
@@ -171,20 +175,23 @@ class FeedingLabeler:
             return
         else:
             self.vidpath = self.vidpath[0]
+            self.last_frame_written = 0
         self.vid_loaded = True
         self.window.title(f"Feeding Analyzer - {self.vidpath}")
         if self.vidpath.endswith('.seq'):
+            self.suffix = '.seq'
             self.vid = SEQReader(self.vidpath)
         elif self.vidpath.endswith('.avi'):
+            self.suffix = '.avi'
             self.vid = VidReader(self.vidpath)
         else:
             messagebox.showerror(title='Not a movie!', message='Pick either a .seq or .avi file')
         self.centroids_by_frm = np.zeros((len(self.vid),2))
         self.save_dir = os.path.join(os.path.dirname(self.vidpath), 'feeding_events')
+        self.log_path = os.path.join(self.save_dir, 'feeding_log.csv')
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
         else:
-            self.log_path = os.path.join(self.save_dir,'feeding_log.csv')
             if os.path.exists(self.log_path):
                 self.log = pd.read_csv(self.log_path)
         self.display_frame()
@@ -198,7 +205,16 @@ class FeedingLabeler:
         if self.centroids_by_frm[self.vid.frame_pointer,:].sum()>0:
             self.removeclick()
         self.vid.frame_pointer=-1
-        self.display_frame()
+        self.display_frame(copy_centroid=False)
+
+    def navigate_to_frame(self,idx):
+        user_selection = int(self.ent_frame_idx.get())  # Get the user selected value
+        if user_selection > len(self.vid):
+            # If the user selected a video index out of range, replace the value with the last video index:
+            user_selection = len(self.vid)
+        self.vid.frame_pointer = user_selection-2 #user selection is 1-num_frames, regular indexing starts at 0
+        self.display_frame(copy_centroid=False)
+
 
     def draw_centroid(self):
         if self.centroid!=(0,0) and self.centroid!=(-1,-1) :
@@ -233,16 +249,18 @@ class FeedingLabeler:
         self.lbl_frame_centroid.configure(text=' ')
         self.lbl_frame_centroid.update()
 
-    def display_frame(self, event=None,back=False):
+    def display_frame(self, event=None,copy_centroid=True):
         """Read a single frame from the current video and display it onto the GUI."""
         ret, frame = self.vid.read()  # Read a single frame
+        self.ent_frame_idx.delete(0, tk.END)
+        self.ent_frame_idx.insert(0, self.vid.frame_pointer+1)
         self.frame = PIL.Image.fromarray(frame)  # Save that frame
         self.frame_array = frame
         self.frame = self.frame.resize((self.width,self.height))
         self.photo = PIL.ImageTk.PhotoImage(image=self.frame)  # Convert frame to display it on GUI
         self.photo_copy = PIL.Image.fromarray(frame)
         self.video_panel.create_image(0, 0, image=self.photo, anchor=tk.NW)  # Draw the image in the Panel widget
-        if not back:
+        if copy_centroid:
             if self.centroids_by_frm[self.vid.frame_pointer,:].sum() != 0:
                 self.centroid = tuple(self.centroids_by_frm[self.vid.frame_pointer,::-1])
             else:
@@ -285,7 +303,7 @@ class FeedingLabeler:
                 centroid = self.centroids_by_frm[frame_num,::-1]
                 row, col = self.translate_centroid(centroid)
                 frm_tmp = frame_num+1
-                parent_vidname = os.path.basename(self.vidpath).split('.')[0]
+                parent_vidname = os.path.basename(self.vidpath).replace(self.suffix,'')
                 movie_name = f'{parent_vidname}_frame_{frm_tmp}_coords_{row}-{col}.avi'
                 entry = {'source_vid': self.vidpath, 'start_frame': frm_tmp,'coords':(row,col)}
                 movie_path = os.path.join(self.save_dir,movie_name)
@@ -327,7 +345,7 @@ class FeedingLabeler:
         self.vid.frame_pointer -= 2
         if self.vid.frame_pointer < -1:
             self.vid.frame_pointer = -1
-        self.display_frame(back=True)
+        self.display_frame(copy_centroid=False)
 
     def next_frame(self):
         self.display_frame()
@@ -364,7 +382,7 @@ class VidReader():
     """ Helper class for avi compatibility, as well as seq. It uses cv2.VideoCapture"""
     def __init__(self,vidpath):
         self.cap = cv2.VideoCapture(vidpath)
-        self.frame_pointer = 0
+        self.frame_pointer = -1
         self.num_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     def read(self):
