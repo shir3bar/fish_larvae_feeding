@@ -309,10 +309,10 @@ class FeedingLabeler:
                 frame_num = i+1
                 video_writer.release()
                 self.log = self.log.append(entry,ignore_index=True)
-                self.zero_vars()
                 self.last_frame_written = i
             else:
                 frame_num += 1
+        self.zero_vars()
         messagebox.showinfo('segment saved!', f'finished saving at {movie_path}')
 
 
