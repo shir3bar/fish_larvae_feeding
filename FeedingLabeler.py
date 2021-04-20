@@ -188,7 +188,7 @@ class FeedingLabeler:
 
     def on_close(self):
         if self.vid_loaded:
-            self.log.to_csv(self.log_pathpath)
+            self.log.to_csv(self.log_path)
         self.window.quit()
 
     def rewind(self):
