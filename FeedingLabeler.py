@@ -230,7 +230,7 @@ class FeedingLabeler:
         self.centroid = (0,0)
         self.centroids_by_frm[self.vid.frame_pointer,:] = self.centroid
         self.video_panel.create_image(0, 0, image=self.photo, anchor=tk.NW)
-        self.lbl_frame_centroid.configure(' ')
+        self.lbl_frame_centroid.configure(text=' ')
         self.lbl_frame_centroid.update()
 
     def display_frame(self, event=None,back=False):
@@ -319,7 +319,7 @@ class FeedingLabeler:
     def zero_vars(self):
         self.comment =''
         self.ent_comment.delete(0, 'end')
-        self.lbl_frame_centroid.configure(' ')
+        self.lbl_frame_centroid.configure(text=' ')
         self.lbl_frame_centroid.update()
         self.label.set(None)
 
