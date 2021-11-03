@@ -63,7 +63,7 @@ class Labeler:
             # Feeding I&O (In and Out) is when the food item briefly and it pops out
             # Spitting is when the fish spits the food item out (forcefully)
             # Other is when the main part of the frame doesn't contain a fish or the fish is blurry and out-of-focus
-            self.lbl_comment = tk.Label(master=self.frm_label, text='Comments:')
+        self.lbl_comment = tk.Label(master=self.frm_label, text='Comments:')
         self.ent_comment = tk.Entry(master=self.frm_label)
         self.ent_comment.bind("<Return>", self.insert_comment)
 

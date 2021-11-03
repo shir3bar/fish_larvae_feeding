@@ -8,7 +8,8 @@ from tkinter import messagebox
 import numpy as np
 from SEQReader import SEQReader
 import tkinter.ttk as ttk
-
+import multiprocessing
+import pathos
 
 class FeedingLabeler:
     ORIGINAL_WIDTH = 1920
@@ -16,7 +17,8 @@ class FeedingLabeler:
     MOVIE_PREFIX = 'cutout'  # movie file name prefix
     KEYS_TO_LABELS = {'2': 'Feeding I&O', '3': 'Spitting', '5': 'Feeding Success',
                       '7': 'Delete Video', '8': 'Other', '9': 'Feeding Fail', '-': 'Swimming'}
-
+    e = multiprocessing.Event()
+    p = None
     def __init__(self,fps=30,padding=325):
         """ Initialize a new instance of the FeedingLabeler application."""
          # This is a tkinter based GUI
@@ -215,9 +217,8 @@ class FeedingLabeler:
         self.vid.frame_pointer = user_selection-2 #user selection is 1-num_frames, regular indexing starts at 0
         self.display_frame(copy_centroid=False)
 
-
     def draw_centroid(self):
-        if self.centroid!=(0,0) and self.centroid!=(-1,-1) :
+        if self.centroid != (0,0) and self.centroid != (-1,-1) :
             x,y = self.centroid
             x = int(x * self.width)
             y = int(y * self.height)
@@ -241,6 +242,12 @@ class FeedingLabeler:
         result = messagebox.askquestion('segment save', 'do you want to save segment?')
         if result=='yes':
             self.save_segment()
+
+    def onclick(self,event):
+        if self.centroid == (0,0):
+            self.displayclick()
+        else:
+            self.removeclick()
 
     def clear_click_selection(self):
         self.centroid = (0,0)
@@ -353,30 +360,43 @@ class FeedingLabeler:
     def handle_play(self, event=None):
         """ Handle play button click, if it is clicked once turn it into a pause button."""
         self.pause = not self.pause  # Now when the "Play" button will be clicked again it will pause the video
+        if not self.pause:
+            self.start_playing_proc()
+        else:
+            self.stop_playing_proc()
 
-    def play_vid(self,event=None,play_speed=15):
+    def play_vid(self,event=None,play_speed=1):
         """ This method plays the video file currently loaded to the GUI.
         The video is played by recursively calling this method using the window.after() tkinter method.
         The method will stop when the video is paused or reaches its end.
         This method is invoked either by pressing the play button, or by pressing the 0 key.
 
         """
-        if event:
-            # if the method was invoked via key stroke, then call the method that handles the play/pause functionality:
-            self.handle_play()
-
         try:
             # Now, as long as pause isn't pressed, and the video doesn't end, sequentially display frames:
-            if not self.pause:
+            while self.vid.isOpened():
+                if self.e.is_set:
+                    self.e.clear()
+                    break
                 # pause hasn't been pressed
                 self.display_frame()  # display a single frame
                 # The main driving force behind the method, recursively calling the method again after 15 milliseconds:
-                self.window.after(play_speed, self.play_vid)
         except AttributeError:
             # If the video reached its end tkinter will raise an AttributeError, we'll catch it and reset the video:
             self.vid.frame_pointer = -1  # Rewind the video capture object to frame
             self.display_frame()  # display the first frame
             self.pause = not self.pause  # Change the status of the play/pause button from "Pause" to "Play"
+
+    def start_playing_proc(self):
+        self.p = multiprocessing.Process(target=self.play_vid, args=())
+        self.p.start()
+
+    def stop_playing_proc(self):
+        self.e.set()
+        self.p.join()
+
+
+
 
 class VidReader():
     """ Helper class for avi compatibility, as well as seq. It uses cv2.VideoCapture"""

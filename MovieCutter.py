@@ -68,6 +68,9 @@ class MovieProcessor:
         # The bbox_dict will house the coordinates and dimensions of the bounding boxes around the detected objects,
         # as well as the centroids of these bounding boxes:
         self.bbox_dict = {}
+        self.contour_dict = {}
+        self.rotated_dict = {}
+        self.bbox_rotated_dict = {}
         self.frame = None # video frame, initialize at nobe
         # codec for video writing, see https://www.pyimagesearch.com/2016/02/22/writing-to-video-with-opencv/:
         self.fourcc = cv2.VideoWriter_fourcc(*"MJPG")#cv2.VideoWriter_fourcc(*'RGBA')
@@ -101,6 +104,9 @@ class MovieProcessor:
             # for each detected object/blob/contour
             # Get the bounding box:
             (x, y, w, h) = cv2.boundingRect(contour)
+            min_rect = cv2.minAreaRect(contour)
+            rotated_box = cv2.boxPoints(min_rect)
+            bounding_rotated_box = cv2.boundingRect(rotated_box)
             # Filter by height and width:
             contour_valid = (w >= self.min_width) and (
                     h >= self.min_height) and (w <= self.min_width*10) and (h <= self.min_height*10)
@@ -112,6 +118,9 @@ class MovieProcessor:
             centroid = self.get_centroid(x, y, w, h)
             # Create the bbox entry:
             self.bbox_dict[(x, y, w, h)] = centroid
+            self.rotated_dict[centroid] = rotated_box
+            self.bbox_rotated_dict[centroid] = bounding_rotated_box
+            self.contour_dict[(x,y,w,h)] = contour
 
     def draw_boxes(self):
         """ Draw bounding boxes around objects in image
