@@ -364,8 +364,8 @@ class MovieCutter(MovieProcessor):
         for contour, centroid in self.bbox_dict.items():
             if contour in self.contour_dict.keys():
                 entry = self.contour_dict[contour]
-                if self.save_movies:
-                    self.close_segment(entry[3], contour)
+                #if self.save_movies and len(self.movie_dict)>0:
+                #    self.close_segment(entry[3], contour)
             # If this contour doesn't have a movie already, get the bounds of the new video:
             x1, x2, y1, y2 = self.get_bounds(centroid)
             # Create a new entry for this fish - dimensions, frame counter,
@@ -489,7 +489,6 @@ class MovieCutter(MovieProcessor):
                 self.initiate_movies()  # create the fish movie segments for this frame
             if self.save_movies:
                 self.write_movies()  # Write a frame to the movie segments initiated
-
             if self.progressbar and self.counter % 10 == 0:
                 # Update the progress bar in decimal increments:
                 self.progressbar["value"] = self.counter
@@ -498,6 +497,7 @@ class MovieCutter(MovieProcessor):
             self.counter += 1  # Monitor the number of frames in the original vid
             self.fps_timer.update()   # update the fps timer
         # When done, release the remaining resources and save log:
+        print('whoops')
         self.close_everything()
 
     def release_videos(self):
