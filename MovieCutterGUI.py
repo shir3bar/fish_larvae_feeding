@@ -115,7 +115,7 @@ class CutterApp():
                 # Define a new movie cutter object:
                 self.movie_cutters.append(MovieCutter(self.vidpaths[i], self.savepath,
                                                       trainlabel=self.lbl_training, progressbar=self.bar,
-                                                      save_movies=self.write_movies.get()))
+                                                      save_movies=True))
                 print(self.movie_cutters[i])
             # Display the next set of user instructions on the GUI:
             self.lbl_training.configure(text=self.CUT_MSG)

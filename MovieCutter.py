@@ -471,7 +471,7 @@ class MovieCutter(MovieProcessor):
         self.pre_cutting()
         # Set the gap between checks for fish, this is roughly 80% of the length of a video segment.
         # As an example, if video segments are to be a 100 frames in length, then check for fish every 80 frames:
-        check_every = round(self.movie_length * 0.8)
+        check_every = round(self.movie_length * 1) # changed to 100% because there were too many overlapping vids
         if self.trainlabel:
             # Update the GUI label to inform user of the stage of the processing:
             self.update_gui_lbl(self.CUTTING_MSG)
