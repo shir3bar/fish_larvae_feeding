@@ -354,7 +354,8 @@ class MoviePlayer:
                         print(filename)
                         self.log_filepath = os.path.join(root, filename)   # save path
                         self.log = pd.read_csv(self.log_filepath)  # load log
-            break
+            else:
+                break
         if self.log.empty:
             # Create a new log file if one doesn't exist:
             self.create_missing_log()
