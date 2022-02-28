@@ -7,7 +7,9 @@ import pandas as pd
 from tkinter import messagebox
 import numpy as np
 from pathlib import Path
-
+from imutils.video import FileVideoStream
+import imutils
+import time
 
 class Labeler:
     """ The Feeding Labeler is a GUI to help tag video samples for the Larvae Feeding project. It is meant to be used
@@ -63,7 +65,7 @@ class Labeler:
         for label_name in self.LABEL_LIST:
             if self.LABEL_MULTICHOICE:
                 self.btn_labels.append(tk.Checkbutton(master=self.frm_label, text=label_name,
-                                                      #onvalue=1, offvalue=0,
+                                                      onvalue=1, offvalue=0,
                                                       variable=self.label[label_name],
                                                     command=self.set_label))
             else:
@@ -262,6 +264,7 @@ class MoviePlayer:
         self.window = window
         self.label_var = label_var
         self.comment_widget = comment_widget
+
         self.multichoice = multichoice # multichoice label vars will be loaded differently
         if self.multichoice:
             self.column_names = {label_name : label_name.lower().replace(' ', '_')
@@ -270,7 +273,7 @@ class MoviePlayer:
         self.curr_vid_idx = 0  # Current video index
         self.num_vids = 0  # Total number of videos loaded
         self.panel = tk.Canvas(master=self.window, width=500, height=500)  # Used to display the video
-        self.panel.bind("<Configure>", self.resize_frame)
+        #self.panel.bind("<Configure>", self.resize_frame)
         self.directory = None  # Directory where the videos are saved
         self.curr_vid = None   # Current video capture object
         self.log_filepath = ''  # Log file location
@@ -283,6 +286,7 @@ class MoviePlayer:
         self.set_layout()  # Set the GUI layout
         self.window.bind('<Key>',self.handle_keystroke)
         self.frame = np.zeros(1)
+        self.play_speed = 5
         self.resize = False
 
     def define_vid_btn_frm(self):
@@ -301,6 +305,7 @@ class MoviePlayer:
         self.btn_play.bind('<Button-1>', self.handle_play)  # Set the play/pause marker
         # Snapshot button:
         self.btn_snapshot = tk.Button(master=self.frm_vid_btns, text='Snapshot', command=self.get_snapshot)
+        self.btn_resize = tk.Button(master=self.frm_vid_btns, text='Resize', command=self.resize_frame)
         # Show the frame and the coordinates the video was cut from in the original video:
         self.lbl_frame_centroid = tk.Label(master=self.frm_vid_btns, text='')
 
@@ -312,7 +317,8 @@ class MoviePlayer:
         self.btn_play.grid(row=0, column=3, sticky="e", padx=10)
         self.btn_next.grid(row=0, column=4, sticky="e", padx=10)
         self.btn_snapshot.grid(row=0, column=5, sticky="e", padx=10)
-        self.lbl_frame_centroid.grid(row=0, column=6, sticky="e", padx=10)
+        self.btn_resize.grid(row=0, column=6, sticky="e", padx=10)
+        self.lbl_frame_centroid.grid(row=0, column=7, sticky="e", padx=10)
         self.panel.grid(row=0, column=1, sticky='nsew')
         self.frm_vid_btns.grid(row=1, column=1)
 
@@ -328,14 +334,45 @@ class MoviePlayer:
         if event.char in key_dict.keys():
             key_dict[event.char](event)
 
+    def save_resized(self,resize_shape):
+        self.reset_vid()
+        frame = self.curr_vid.read()
+        self.num_frames = int(self.curr_vid.stream.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.clip_volume = np.zeros((self.num_frames-1, resize_shape,resize_shape,3),dtype=np.uint8)
+        for i in range(0,self.num_frames-1):
+            #print(i, frame.shape,frame.max())#,max(frame))#, max(img))
+            img = cv2.resize(frame, (resize_shape, resize_shape), interpolation=cv2.INTER_AREA)
+            self.clip_volume[i,...] = (img)
+            frame = self.curr_vid.read()
+        self.reset_vid()
+
+
     def resize_frame(self,event=None):
         if self.frame.any():
-            resize_shape = min(event.width, event.height)
-            img = PIL.Image.fromarray(self.frame).resize((resize_shape, resize_shape), PIL.Image.ANTIALIAS)
-            self.photo = PIL.ImageTk.PhotoImage(image=img)  # Convert frame to display it on GUI
-            self.panel.create_image(0, 0, image=self.photo, anchor=tk.NW)  # Draw the image in the Panel widget
+            #resize_shape = min(event.width, event.height)
+            #self.curr_frame_idx = 0
+            #self.curr_vid.reshape_size=resize_shape
+            #self.display_frame()
+            #img = PIL.Image.fromarray(self.frame).resize((resize_shape, resize_shape), PIL.Image.ANTIALIAS)
+              # Convert frame to display it on GUI
+            #self.save_resized(resize_shape)
+            #img = cv2.resize(self.frame, (resize_shape, resize_shape), interpolation=cv2.INTER_AREA)
+            #img = self.clip_volume[0,...]
+            #img = imutils.resize(self.frame,width=resize_shape)
+            #img = PIL.Image.fromarray(img)
+            #self.photo = PIL.ImageTk.PhotoImage(image=img)
+            #self.panel.create_image(0, 0, image=self.photo, anchor=tk.NW)  # Draw the image in the Panel widget
             #self.canvas.itemconfig(self.canvas_img, image=self.img)
-            self.resize = True
+            print('im resizing')
+            self.resize = not self.resize
+            if self.resize:
+                self.play_speed = 1
+            else:
+                self.play_speed = 5
+            try:
+                self.display_frame()
+            except IndexError:
+                self.reset_vid()
         else:
             print(self.frame)
 
@@ -383,7 +420,7 @@ class MoviePlayer:
             entry = self.get_entry(clip_name)
             self.log.loc[i, :] = entry
         # Create a filepath for the log:
-        self.log_filepath = os.path.join(os.path.dirname(vid),'log.csv')
+        self.log_filepath = os.path.join(os.path.dirname(vid),self.LOG_FILENAME)
         self.log.to_csv(self.log_filepath, index=False)  # Save the csv
 
 
@@ -420,11 +457,12 @@ class MoviePlayer:
                     elif filename == self.LOG_FILENAME:
                         # if it's the log.csv file load it to a pandas data frame:
                         print(filename)
-                        self.load_log(root,filename)
+                        self.load_log(self.directory,filename)
             else:
                 break
         if self.log.empty:
             # Create a new log file if one doesn't exist:
+            print('handling missing log')
             self.handle_missing_log()
         self.num_vids = len(self.file_paths)-1  # Get the total number of videos loaded
         self.lbl_numvids.configure(text='/ '+str(self.num_vids))  # display that number in the designated label
@@ -482,14 +520,24 @@ class MoviePlayer:
 
     def display_frame(self, event=None):
         """Read a single frame from the current video and display it onto the GUI."""
-        ret, frame = self.curr_vid.read()  # Read a single frame
+        #ret,
+        frame = self.curr_vid.read()  # Read a single frame
+        if frame is None:
+            raise IndexError
         self.frame = frame  # Save that frame
-        img = PIL.Image.fromarray(frame)
         if self.resize:
+            #curr_pos = int(self.curr_vid.stream.get(cv2.CAP_PROP_POS_FRAMES))
+            #img = self.clip_volume[self.curr_frame_idx-1,...]
+            #self.curr_frame_idx+=1
             resize_shape = min(self.panel.winfo_width(), self.panel.winfo_height())
-            img = img.resize((resize_shape,resize_shape), PIL.Image.ANTIALIAS)
+            img = imutils.resize(frame, width=resize_shape)
+            #img = img.resize((resize_shape,resize_shape), PIL.Image.ANTIALIAS)
+        else:
+            img = frame
+        img = PIL.Image.fromarray(img)
         self.photo = PIL.ImageTk.PhotoImage(image=img)  # Convert frame to display it on GUI
         self.panel.create_image(0, 0, image=self.photo, anchor=tk.NW)  # Draw the image in the Panel widget
+
 
     def get_log_entries(self):
         """ Gets the label and comments fields from the log for the video that is loaded to the GUI"""
@@ -547,14 +595,20 @@ class MoviePlayer:
                               ['frame', self.COORDINATE_COLUMN_NAME]].to_string(index=False)  # retrieve the relevant data
         self.lbl_frame_centroid.configure(text=txt)  # display the text in the widget
         # And finally, open the video file:
-        self.curr_vid = cv2.VideoCapture(self.file_paths[self.curr_vid_idx])
+        #self.curr_vid = cv2.VideoCapture(self.file_paths[self.curr_vid_idx])
+        self.curr_vid = FileVideoStream(self.file_paths[self.curr_vid_idx]).start()#(reshape_size=min(self.panel.winfo_width(),
+                                                                                  #          self.panel.winfo_height()))
+        #if self.resize:
+         #   print('saving new')
+            #self.save_resized(min(self.panel.winfo_width(), self.panel.winfo_height()))
         self.display_frame()  # display the first frame in the video
         self.window.title(self.curr_clip_name)  # change the GUI title to the current video name
         # Start playing the video automatically when a new video is set
         self.handle_play()
         self.play_vid()   # event is set to True so that the play button would be handled as if clicked
 
-    def play_vid(self,event=None,play_speed=5):
+
+    def play_vid(self,event=None):
         """ This method plays the video file currently loaded to the GUI.
         The video is played by recursively calling this method using the window.after() tkinter method.
         The method will stop when the video is paused or reaches its end.
@@ -564,19 +618,27 @@ class MoviePlayer:
         if event:
             # if the method was invoked via key stroke, then call the method that handles the play/pause functionality:
             self.handle_play()
-
         try:
             # Now, as long as pause isn't pressed, and the video doesn't end, sequentially display frames:
             if not self.pause:
                 # pause hasn't been pressed
                 self.display_frame()  # display a single frame
-                # The main driving force behind the method, recursively calling the method again after 15 milliseconds:
-                self.window.after(play_speed, self.play_vid)
+                # The main driving force behind the method, recursively calling the method again after x milliseconds:
+                self.window.after(self.play_speed, self.play_vid)
         except AttributeError:
+            print('ugabogawooga',self.play_speed)
             # If the video reached its end tkinter will raise an AttributeError, we'll catch it and reset the video:
-            self.curr_vid.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Rewind the video capture object to frame
-            self.display_frame()  # display the first frame
-            self.pause = not self.pause  # Change the status of the play/pause button from "Pause" to "Play"
+            self.reset_vid()
+        except IndexError:
+            print('yakadoodledoo',self.play_speed)
+            self.reset_vid()
+
+
+    def reset_vid(self):
+        #self.curr_vid.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Rewind the video capture object to frame
+        self.curr_vid = FileVideoStream(self.file_paths[self.curr_vid_idx]).start()#(reshape_size=self.curr_vid.reshape_size)
+        self.display_frame()  # display the first frame
+        self.pause = not self.pause  # Change the status of the play/pause button from "Pause" to "Play"
 
     def next_vid(self,event=None):
         """Load the next video in the video list.
@@ -586,7 +648,8 @@ class MoviePlayer:
             if isinstance(event.widget, tk.Entry):
                 return
         if self.curr_vid:
-            self.curr_vid.release()   # Release the current video capture object
+            #self.curr_vid.release()   # Release the current video capture object
+            self.curr_vid.stop()
         new_idx = self.curr_vid_idx + 1  # Set the new video index
         if new_idx > self.num_vids:
             # if the new index is out of range, set it to the last video index:
@@ -601,12 +664,15 @@ class MoviePlayer:
             # When typing into an entry, don't activate hot-keys
             if isinstance(event.widget, tk.Entry):
                 return
-        self.curr_vid.release()  # Release the current video capture object
+        self.curr_vid.stop()#.release()  # Release the current video capture object
         new_idx = self.curr_vid_idx - 1
         if new_idx < 0:
             # if the new index is out of range, set it to the first video index:
             new_idx = 0
         self.set_vid(new_idx)  # Load the new video to GUI
+
+
+
 
 
 if __name__ == '__main__':

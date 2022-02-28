@@ -138,7 +138,7 @@ class FeedingLabeler:
             # Set the label to the appropriate value:
             self.label.set(self.KEYS_TO_LABELS[event.char])
         # Whether click or key, label variable value is retrieved and saved to the log dataframe:
-        #self.log.loc[self.player.log.movie_name == self.player.curr_movie_name, ['label']] \
+        #self.log.loc[self.player.log.movie_name == self.player.curr_clip_name, ['label']] \
         #    = self.label.get()
        # self.log_saved = False  # Track changes that are not saved to .csv file
 
