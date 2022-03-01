@@ -626,11 +626,9 @@ class MoviePlayer:
                 # The main driving force behind the method, recursively calling the method again after x milliseconds:
                 self.window.after(self.play_speed, self.play_vid)
         except AttributeError:
-            print('ugabogawooga',self.play_speed)
             # If the video reached its end tkinter will raise an AttributeError, we'll catch it and reset the video:
             self.reset_vid()
         except IndexError:
-            print('yakadoodledoo',self.play_speed)
             self.reset_vid()
 
 
