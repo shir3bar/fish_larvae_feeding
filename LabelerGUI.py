@@ -491,7 +491,7 @@ class MoviePlayer:
             if user_selection > self.num_vids:
                 # If the user selected a video index out of range, replace the value with the last video index:
                 user_selection = self.num_vids
-            self.curr_vid.release()  # release the video capture object
+            self.curr_vid.stop()  # release the video capture object
             self.set_vid(user_selection)   # load the new video in the GUI
         except ValueError:
             # If the value entered is not a number, display a prompt and revert to the current video index:
