@@ -1,4 +1,5 @@
-# fish_larvae_feeding
+# Fish larvae feeding labeler GUI
+## We have a new repository for our action recognition analysis pipeline, check it out [here](https://github.com/shir3bar/larval_fish_behavior_analysis).
 An evidence-based agriculture project using computer vision and deep learning to detect feeding behavior in videos
  of fish larvae grown in aquaculture (fish farms). 
 
@@ -133,7 +134,8 @@ To activate the Movie Cutter application. And: <br>
 To activate the Labeling application. 
 
 ## Next steps
-After creating a database, deep learning :)
+We now have a new [repository] (https://github.com/shir3bar/larval_fish_behavior_analysis) for our deep learning action recognition pipeline AND datasets.
+[See our project page for more details.](https://shir3bar.github.io/larval-fish-page/)
 <br>
 <br>
 
