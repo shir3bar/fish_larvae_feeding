@@ -26,7 +26,8 @@ class RDagLabeler(Labeler):
                     # If the log has been change without saving, open a window prompt:
                     result = messagebox.askquestion('Save log','Do you want to save changes?')
                     if result == 'yes':
-                        # Save labels if requested to by the user:
+                        # Save labels if requested to by the
+                        # user:
                         self.save_labels()
                 # Delete videos tagged for deletion and move the swim videos to a new folder
 
