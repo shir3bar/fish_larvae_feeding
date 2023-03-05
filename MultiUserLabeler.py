@@ -19,7 +19,7 @@ class MultiUserLabeler(Labeler):
                       '-':'very blurry','q': 'no fish','w':'sharp turn','e':'crazy bout',
                       'r':'interrupted swim', 't':'fast swim', 'a':'reverse swim',
                       's':'dark artifact','d':'occlusion', 'f':'floating','g':'mouth opening'}
-    MAIN_ACTIVITIES =tuple( ['Swim','Strike', 'Spit/I&O','Pre-strike','No fish', "Can't tell"])
+    MAIN_ACTIVITIES =tuple( ['Swim','Other','Strike','No fish'])
     MULTIPLE_FISH = tuple( ['1','2', 'Many'])
     FISH_LIST =tuple( ['occlusion', 'fish offcenter', 'just head', 'just tail','blurry', 'very blurry', 'ventral','weird angle'])
     SWIM_LIST = tuple(['floating','interrupted swim','reverse swim','fast swim','turn','sharp turn','crazy bout', 'mouth opening'])
@@ -249,7 +249,7 @@ class MultiUserLabeler(Labeler):
 
 class MultiUserMoviePlayer(MoviePlayer):
     COORDINATE_COLUMN_NAME = 'centroid'
-    LOG_FILENAME = 'labels.csv'
+    LOG_FILENAME = 'preds_labeled.csv'
     def __init__(self,window, label_var=[],comment_widget=[], multichoice=False,username=None,notmulti_key=None):
         self.window = window
         self.label_var = label_var
@@ -303,7 +303,10 @@ class MultiUserMoviePlayer(MoviePlayer):
         if not os.path.isfile(self.log_filepath):
             self.handle_missing_log()
         else:
-            self.log = pd.read_csv(self.log_filepath)  # load log
+            self.log = pd.read_csv(self.log_filepath)  # load log\
+            
+            if 'user_name' not in self.log.columns:
+                self.log['user_name'] = ''
         for key in self.label_var.keys():
             if self.column_names[key] not in self.log.columns:
                 self.log[self.column_names[key]] = 0
